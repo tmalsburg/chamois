@@ -5,10 +5,10 @@ Current status: I wrote Chamois for my own lab and share it without any warranty
 
 Key features:
 - Chamois is inspired by Ibex: Configuration and data format are similar but much simpler.
-- Support for Latin square designs.  Just drop your sentences and start collecting data.
-- Can be combined with most eye-trackers via PyGaze and manufacturer APIs such as pylink and pypixx.
+- Support for Latin square designs.  Just drop your sentences and you’re good to go.
+- Can be combined with most eye-trackers via PyGaze and manufacturer-provided APIs such as pylink and pypixx.
 - Runs on Linux, MacOS, and Windows.  Only dependency is [PySimpleGui](https://www.pysimplegui.org).
-- With only 300 lines of code, Chamois is easy to hack even for users with only basic Python proficiency.
+- With only around 250 lines of code, Chamois is easy to hack even for users with basic Python knowledge.
 
 # Demo experiment
 
@@ -64,7 +64,7 @@ for i,c,s,q in stimuli:
   if random.choice([True, False]):
     pages.append(YesNoQuestionTrial(i,c,q))
 
-# Thank you screen:
+# Thank-you screen:
 pages.append(
   CenteredInstructions("Thank you for your participation!", "Exit"))
 
