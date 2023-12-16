@@ -63,6 +63,9 @@ pages.append(
 
 # A message stored in the results file along with a time stamp:
 pages.append(Message("End of session"))
+
+# Run experiment:
+run_experiment(pages)
 ```
 
 ## Screenshots

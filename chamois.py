@@ -2,10 +2,8 @@
 from PySimpleGUI import *
 theme('Default1')
 
-import time, random, re, math
+import time, random, re, math, uuid
 from collections import Counter
-
-# Infrastructure:
 
 class Page:
   def __init__(self, layout, **kwargs):
@@ -63,8 +61,8 @@ class Message:
   def get_data(self):
     return (self.type, self.starttime, None, None, None, None, None, None, self.metadata)
 
-# The point of a separate class is simple to make this show up in the
-# results as "Instructions".
+# Separate class to make a page show up in the results as
+# "Instructions".
 class Instructions(Page):
   pass
 
@@ -186,13 +184,30 @@ class SubjectIDPage(Page):
     super().handle_event(window)
     self.response = self.values["-SUBJECTID-"]
 
-def ExperimentWindow(layout):
-  """Wrap layout to make it appear vertically and horizontally centered."""
+def run_experiment(pages):
+  # Set up window:
+  layout = [[p.column for p in pages if isinstance(p, Page)]]
   wrapper_layout = [[ProgressBar(len(layout[0])-1, orientation='h', expand_x=True, size=(20, 20), key='-PBAR-')],
                     [Column(layout, expand_x=True, expand_y=True)]]
   window = Window('Experiment', wrapper_layout, keep_on_top=True, resizable=True, font="Courier 17").Finalize()
   window.Maximize()
-  return window
+  # Run experiment:
+  i = 0
+  for p in pages:
+    p.activate(window)
+    if isinstance(p, Page):
+      window['-PBAR-'].update(current_count=i+1)
+      i += 1
+  window.close()
+  # Save data:
+  filename = f"/tmp/results_{uuid.uuid4()}.tsv"
+  with open(filename, "w") as f:
+    f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata\n"]))
+    for t in [p.get_data() for p in pages]:
+      t = tuple(str(v) if v!=None else '' for v in t)
+      print(','.join(t))
+      f.write("\t".join(t))
+      f.write("\n")
 
 def check_latin_square(stimuli):
   # Checks that all items have the same number of sentence:
@@ -226,58 +241,3 @@ def latin_square_lists(stimuli):
     offset += 1
   return lists
 
-# Build experiment:
-
-target_sentences = [
-  [1, "a", "While Bill hunted the deer was hunted by Bill.", "Did Bill hunt the deer?"],
-  [1, "b", "While Bill hunted the deer that was brown and nimble was hunted by Bill.", "Did Bill hunt the deer?"],
-  [2, "a", "While Mary bathed the baby bathed Mary.", "Did Mary bath the baby?"],
-  [2, "b", "While Mary bathed the baby that was small and cute bathed Mary.", "Did Mary bath the baby?"],
-  [3, "a", "Anna scolded the chef of the aristocrats who was routinely letting food go to waste.", "Did food go to waste?"],
-  [3, "b", "Anna studied with the chef of the aristocrats who was routinely letting food go to waste.", "Did food go to waste?"],
-]
-
-fillers = [
-  [20, "filler", "Colorless green ideas sleep furiously.", "Does this sentence make any sense at all?"],
-  [21, "filler", "No head injury is too trivial to be ignored.", "Did that sentence make your brain hurt?"],
-]
-
-stimuli = random.choice(latin_square_lists(target_sentences))
-stimuli += fillers
-random.shuffle(stimuli)
-
-pages = []
-pages.append(Message("Start of session"))
-pages.append(
-  CenteredInstructions([[Text("Welcome to this study!", pad=50)], [Button("Continue")]]))
-pages.append(SubjectIDPage())
-for i,c,s,q in stimuli:
-  pages.append(ReadingTrial(i,c,s))
-  if random.choice([True, False]):
-    pages.append(YesNoQuestionTrial(i,c,q))
-pages.append(
-  CenteredInstructions([[Text("Thank you for your participation!", pad=50)], [Exit()]]))
-pages.append(Message("End of session"))
-
-# Run it:
-
-layout = [[p.column for p in pages if isinstance(p, Page)]]
-window = ExperimentWindow(layout)
-
-i = 0
-for p in pages:
-  p.activate(window)
-  if isinstance(p, Page):
-    window['-PBAR-'].update(current_count=i+1)
-    i += 1
-window.close()
-
-# Save data:
-
-with open("/tmp/results.tsv", "w") as f:
-  f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata\n"]))
-  for t in [p.get_data() for p in pages]:
-    t = tuple(str(v) if v!=None else '' for v in t)
-    print(','.join(t))
-    f.write("\t".join(t))
-    f.write("\n")
