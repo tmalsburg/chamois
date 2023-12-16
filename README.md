@@ -47,7 +47,7 @@ pages.append(
 
 pages.append(SubjectIDPage())
 
-for i,c,s,q in stimuli[0:3]:
+for i,c,s,q in stimuli:
   pages.append(ReadingTrial(i,c,s))
   if random.choice([True, False]):
     pages.append(YesNoQuestionTrial(i,c,q))
@@ -63,7 +63,7 @@ pages.append(Message("End of session"))
 Output comes in tab-separated values format (`.tsv`) and includes the AOIs of the individual words.  Screenshots of the stimulus screens are separately stored on disk.
 
 ``` 
-type,starttime,endtime,item,condition,stimulus,response,screenshot,metadata
+type	starttime	endtime	item	condition	stimulus	response	screenshot	metadata
 Message	1702732592.0449314							Start of session
 CenteredInstructions	1702732592.0449767	1702732592.8204858						
 SubjectIDPage	1702732592.8210366	1702732595.677696				001		
