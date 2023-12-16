@@ -65,6 +65,12 @@ pages.append(
 pages.append(Message("End of session"))
 ```
 
+## Screenshots
+
+![Screenshot of a ReadingTrial](images/1_b_ReadingTrial.png)
+
+![Screenshot of a YesNoQuestionTrial](images/1_b_YesNoQuestionTrial.png)
+
 ## Output
 
 Output comes in tab-separated values format (`.tsv`) and includes the AOIs of the individual words.  Screenshots of the stimulus screens are separately stored on disk.
