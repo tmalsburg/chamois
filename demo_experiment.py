@@ -2,6 +2,10 @@
 # Load Chamois:
 exec(open("chamois.py").read())
 
+# Change PySimpleGui theme:
+theme('Black')
+# See here for all available themes: https://media.geeksforgeeks.org/wp-content/uploads/20200511200254/f19.jpg
+
 # Stimuli:
 
 target_sentences = [
@@ -26,19 +30,32 @@ random.shuffle(stimuli)
 
 # Structure of the experiment:
 
+# An experiment consists of a series of pages:
 pages = []
+
+# A message stored in the results file along with a time stamp:
 pages.append(Message("Start of session"))
+
+# Welcome screen:
 pages.append(
   CenteredInstructions([[Text("Welcome to this study!", pad=50)], [Button("Continue")]]))
+
+# Asks user to enter subject ID:
 pages.append(SubjectIDPage())
+
+# Experimental trials:
 for i,c,s,q in stimuli:
   pages.append(ReadingTrial(i,c,s))
   if random.choice([True, False]):
     pages.append(YesNoQuestionTrial(i,c,q))
+
+# Thank you screen:
 pages.append(
   CenteredInstructions([[Text("Thank you for your participation!", pad=50)], [Exit()]]))
+
+# Another message with a time stamp:
 pages.append(Message("End of session"))
 
-# Run it:
-
+# Run experiment:
 run_experiment(pages)
+
