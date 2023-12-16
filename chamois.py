@@ -67,10 +67,11 @@ class Instructions(Page):
   pass
 
 class CenteredInstructions(Instructions): 
-  def __init__(self, layout, **kwargs):
-    layout = list(layout)
-    layout.insert(0, [VPush()])
-    layout.append([VPush()])
+  def __init__(self, text, button_text, **kwargs):
+    layout = [[VPush()],
+              [Text(text, pad=50)],
+              [Button(button_text)],
+              [VPush()]]
     super().__init__(layout, element_justification="center")
 
 # Takes a screenshot before handling an event:
@@ -163,7 +164,7 @@ class ReadingTrial(ExperimentalTrial):
 class YesNoQuestionTrial(ExperimentalTrial):
   def __init__(self, item, condition, q):
     layout = [[VPush()],
-              [Text(q)],
+              [Text(q, pad=50)],
               random.sample([Yes(), No()], 2),
               [VPush()]]
     super().__init__(layout, element_justification="center")
@@ -243,4 +244,3 @@ def latin_square_lists(stimuli):
       l.append(d[i][(j + offset) % len(conditions)])
     offset += 1
   return lists
-

@@ -38,7 +38,7 @@ pages.append(Message("Start of session"))
 
 # Welcome screen:
 pages.append(
-  CenteredInstructions([[Text("Welcome to this study!", pad=50)], [Button("Continue")]]))
+  CenteredInstructions("Welcome to this study!", "Continue"))
 
 # Asks user to enter subject ID:
 pages.append(SubjectIDPage())
@@ -51,7 +51,7 @@ for i,c,s,q in stimuli:
 
 # Thank you screen:
 pages.append(
-  CenteredInstructions([[Text("Thank you for your participation!", pad=50)], [Exit()]]))
+  CenteredInstructions("Thank you for your participation!", "Exit"))
 
 # Another message with a time stamp:
 pages.append(Message("End of session"))
