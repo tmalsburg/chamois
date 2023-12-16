@@ -106,21 +106,24 @@ class FixationCross(Graph):
     self.height  = height
     self.radius1 = radius1
     self.radius2 = radius2
+    theme_properties = LOOK_AND_FEEL_TABLE[theme()]
+    self.background_color = theme_properties['BACKGROUND']
+    self.foreground_color = theme_properties['TEXT']
     super().__init__(
       canvas_size       = (width, height),
       graph_bottom_left = (-width/2, -height/2), 
       graph_top_right   = (width/2, height/2),
-      background_color  = COLOR_SYSTEM_DEFAULT)
+      background_color  = self.background_color)
   def draw(self):
     r1 = self.radius1
     r2 = self.radius2
     # Draw the inner oval:
     self.draw_oval((r1, r1), (-r1, -r1),
-                   line_color="black",
-                   fill_color="black")
+                   line_color=self.foreground_color,
+                   fill_color=self.foreground_color)
     # Draw the cross using lines:
-    self.draw_line((r1*1.1, 0), (-r1*1.1, 0), width=7, color="white")
-    self.draw_line((0, r1*1.1), (0, -r1*1.1), width=7, color="white")
+    self.draw_line((r1*1.1, 0), (-r1*1.1, 0), width=7, color=self.background_color)
+    self.draw_line((0, r1*1.1), (0, -r1*1.1), width=7, color=self.background_color)
     # Draw the inner oval:
     self.draw_oval((r2, r2), (-r2, -r2),
                    line_color="red",
