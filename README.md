@@ -70,9 +70,17 @@ run_experiment(pages)
 
 ## Screenshots
 
-![Screenshot of a ReadingTrial](images/1_b_ReadingTrial.png)
+![Screenshot 1](images/screenshot_1.png)
 
-![Screenshot of a YesNoQuestionTrial](images/1_b_YesNoQuestionTrial.png)
+![Screenshot 2](images/screenshot_2.png)
+
+![Screenshot 3](images/screenshot_3.png)
+
+![Screenshot 4](images/screenshot_4.png)
+
+![Screenshot 5](images/screenshot_5.png)
+
+![Screenshot 6](images/screenshot_6.png)
 
 ## Output
 

@@ -2,7 +2,7 @@
 # Load Chamois:
 exec(open("chamois.py").read())
 
-# Change PySimpleGui theme:
+# Change theme:
 theme('Black')
 # See here for all available themes: https://media.geeksforgeeks.org/wp-content/uploads/20200511200254/f19.jpg
 
