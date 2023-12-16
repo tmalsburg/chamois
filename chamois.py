@@ -204,7 +204,7 @@ def run_experiment(pages):
       i += 1
   window.close()
   # Save data:
-  filename = f"/tmp/results_{uuid.uuid4()}.tsv"
+  filename = f"results_{uuid.uuid4()}.tsv"
   with open(filename, "w") as f:
     f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata\n"]))
     for t in [p.get_data() for p in pages]:
