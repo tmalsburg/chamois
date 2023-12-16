@@ -35,11 +35,18 @@ stimuli += fillers
 random.shuffle(stimuli)
 ```
 
-## Structure of experiment
+## Experiment
 
-An experiment consists of a series of “pages” that are diplayed one by one.  Different types of pages are predefined but it’s easy to add new types of pages.
+An experiment consists of a series of “pages” that are displayed one by one.  Different types of pages are predefined but it’s easy to add new types of pages.
 
 ``` python
+
+# Load Chamois:
+exec(open("chamois.py").read())
+
+# Change theme:
+theme('Black')
+
 pages = []
 # A message stored in the results file along with a time stamp:
 pages.append(Message("Start of session"))
