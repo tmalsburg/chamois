@@ -2,8 +2,10 @@
 from PySimpleGUI import *
 theme('Default1')
 
-import time, random, re, math, uuid
+import time, random, re, math, uuid, os
 from collections import Counter
+
+# latin_square_list_idx = None
 
 class Page:
   def __init__(self, layout, **kwargs):
@@ -212,14 +214,17 @@ def run_experiment(pages):
       print(','.join(t))
       f.write("\t".join(t))
       f.write("\n")
+  # Update our on-disk memory of completed lists:
+  with open('tested_latin_square_lists.txt', 'a') as file:
+    file.write(f'{latin_square_list_label}\n')
 
-def check_latin_square(stimuli):
+def check_latin_square(target_sentences):
   # Checks that all items have the same number of sentence:
-  if len(set(Counter([x[0] for x in stimuli]).values())) > 1:
+  if len(set(Counter([x[0] for x in target_sentences]).values())) > 1:
     RuntimeError("All items need to have the same number of sentences.")
   # Checks that all items have the same conditions:
   d = dict()
-  for k,v in [(x[0], x[1]) for x in stimuli]:
+  for k,v in [(x[0], x[1]) for x in target_sentences]:
     d.setdefault(k, []).append(v)
   items = list(d.keys())
   if len(set([tuple(l) for l in d.values()])) != 1:
@@ -230,12 +235,12 @@ def check_latin_square(stimuli):
     RuntimeError("At least one condition appears multiple times per item.")
   return items, conditions
 
-def latin_square_lists(stimuli):
-  items, conditions = check_latin_square(stimuli)
-  stimuli.sort(key=lambda s:s[1])
-  stimuli.sort(key=lambda s:s[0])
+def latin_square_lists(target_sentences):
+  items, conditions = check_latin_square(target_sentences)
+  target_sentences.sort(key=lambda s:s[1])
+  target_sentences.sort(key=lambda s:s[0])
   d = {}
-  for s in stimuli:
+  for s in target_sentences:
     d.setdefault(s[0], []).append(s)
   lists = [list() for _ in conditions]
   offset = 0
@@ -243,4 +248,26 @@ def latin_square_lists(stimuli):
     for j,l in enumerate(lists):
       l.append(d[i][(j + offset) % len(conditions)])
     offset += 1
-  return lists
+  return dict(zip(conditions, lists))
+
+# TODO Warn if distribution of lists looks unbalanced (more
+# unbalances than we would expect under H0=no bias).
+def next_latin_square_list_label(target_sentences):
+  global latin_square_list_label
+  filename = "tested_latin_square_lists.txt"
+  items, conditions = check_latin_square(target_sentences)
+  if not os.path.isfile(filename):
+    print(0)
+  with open(filename, 'r') as file:
+    previous_lists = [line.strip() for line in file if line.strip()]
+  c = Counter(previous_lists)
+  x = [(cond, c[cond]) for cond in conditions]
+  x.sort(key=lambda s:s[1])
+  latin_square_list_label = x[0][0]
+  return latin_square_list_label
+
+def next_latin_square_list(target_sentences):
+  next_list_label = next_latin_square_list_label(target_sentences)
+  print(f'Next Latin square list: {next_list_label}')
+  return latin_square_lists(target_sentences)[next_list_label]
+

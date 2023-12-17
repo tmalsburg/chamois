@@ -24,7 +24,7 @@ fillers = [
 
 # Mix and shuffle stimuli:
 
-stimuli = random.choice(latin_square_lists(target_sentences))
+stimuli = next_latin_square_list(target_sentences)
 stimuli += fillers
 random.shuffle(stimuli)
 
