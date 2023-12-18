@@ -251,19 +251,20 @@ def latin_square_lists(target_sentences):
   return dict(zip(conditions, lists))
 
 # TODO Warn if distribution of lists looks unbalanced (more
-# unbalances than we would expect under H0=no bias).
+# unbalanced than we would expect under H0: no bias).
 def next_latin_square_list_label(target_sentences):
   global latin_square_list_label
   filename = "tested_latin_square_lists.txt"
   items, conditions = check_latin_square(target_sentences)
   if not os.path.isfile(filename):
-    print(0)
-  with open(filename, 'r') as file:
-    previous_lists = [line.strip() for line in file if line.strip()]
-  c = Counter(previous_lists)
-  x = [(cond, c[cond]) for cond in conditions]
-  x.sort(key=lambda s:s[1])
-  latin_square_list_label = x[0][0]
+    latin_square_list_label = 0
+  else:
+    with open(filename, 'r') as file:
+      previous_lists = [line.strip() for line in file if line.strip()]
+    c = Counter(previous_lists)
+    x = [(cond, c[cond]) for cond in conditions]
+    x.sort(key=lambda s:s[1])
+    latin_square_list_label = x[0][0]
   return latin_square_list_label
 
 def next_latin_square_list(target_sentences):
