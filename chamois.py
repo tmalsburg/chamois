@@ -29,11 +29,11 @@ class Page:
     self.column.update(visible=True)
     self.started = True
     self.starttime = time.time()
-    self.stage_setting(window)
+    self.prelude(window)
     self.handle_event(window)
   # Optional stage-setting that can only be performed once the page is
   # displayed:
-  def stage_setting(self, window):
+  def prelude(self, window):
     window.refresh()
   def deactivate(self):
     if not self.started:
@@ -144,7 +144,7 @@ class ReadingTrial(ExperimentalTrial):
     self.item      = item
     self.condition = condition
     self.stimulus  = s
-  def stage_setting(self, window):
+  def prelude(self, window):
     t = 450
     while t > 40:
       self.fixation_cross.draw()
