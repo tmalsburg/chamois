@@ -8,6 +8,11 @@ theme('Black')
 
 # Stimuli:
 
+practice_sentence = [
+  [101, "practice", "This is a practice sentence.", "Was this sentence difficult?"],
+  [102, "practice", "This is another practice sentence.", "Was this sentence in German?"]
+]
+
 target_sentences = [
   [1, "a", "While Bill hunted the deer was hunted by Bill.", "Did Bill hunt the deer?"],
   [1, "b", "While Bill hunted the deer that was brown and nimble was hunted by Bill.", "Did Bill hunt the deer?"],
@@ -43,7 +48,18 @@ pages.append(
 # Asks user to enter subject ID:
 pages.append(SubjectIDPage())
 
+# Practice sentences:
+pages.append(
+  CenteredInstructions("First some practice sentences!", "Continue"))
+
+for i,c,s,q in practice_sentence:
+  pages.append(ReadingTrial(i,c,s))
+  pages.append(YesNoQuestionTrial(i,c,q))
+
 # Experimental trials:
+pages.append(
+  CenteredInstructions("Now, on to the real experiment!", "Continue"))
+
 for i,c,s,q in stimuli:
   pages.append(ReadingTrial(i,c,s))
   if random.choice([True, False]):
