@@ -5,7 +5,8 @@ exec(open("chamois.py").read())
 
 # Change theme:
 theme('Black')
-# See here for all available themes: https://media.geeksforgeeks.org/wp-content/uploads/20200511200254/f19.jpg
+# See here for all available themes:
+# https://media.geeksforgeeks.org/wp-content/uploads/20200511200254/f19.jpg
 
 # Stimuli:
 
@@ -35,6 +36,8 @@ stimuli += fillers
 random.shuffle(stimuli)
 
 # Structure of the experiment:
+
+session_id = uuid.uuid4()
 
 # An experiment consists of a series of pages:
 pages = []
@@ -74,5 +77,5 @@ pages.append(
 pages.append(Message("End of session"))
 
 # Run experiment:
-run_experiment(pages)
+run_experiment(pages, session_id)
 
