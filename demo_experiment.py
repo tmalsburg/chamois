@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 
 # Load Chamois:
 exec(open("chamois.py").read())
