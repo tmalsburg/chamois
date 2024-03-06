@@ -43,14 +43,14 @@ pages.append(Message("Start of session"))
 
 # Welcome screen:
 pages.append(
-  CenteredInstructions("Welcome to this study!", "Continue"))
+  CenteredInstructions("Welcome to this study!"))
 
 # Asks user to enter subject ID:
 pages.append(SubjectIDPage())
 
 # Practice sentences:
 pages.append(
-  CenteredInstructions("First some practice sentences!", "Continue"))
+  CenteredInstructions("First some practice sentences!"))
 
 for i,c,s,q in practice_sentence:
   pages.append(ReadingTrial(i,c,s))
@@ -58,7 +58,7 @@ for i,c,s,q in practice_sentence:
 
 # Experimental trials:
 pages.append(
-  CenteredInstructions("Now, on to the real experiment!", "Continue"))
+  CenteredInstructions("Now, on to the real experiment!"))
 
 for i,c,s,q in stimuli:
   pages.append(ReadingTrial(i,c,s))
@@ -67,7 +67,7 @@ for i,c,s,q in stimuli:
 
 # Thank you screen:
 pages.append(
-  CenteredInstructions("Thank you for your participation!", "Exit"))
+  CenteredInstructions("Thank you for your participation!"))
 
 # Another message with a time stamp:
 pages.append(Message("End of session"))

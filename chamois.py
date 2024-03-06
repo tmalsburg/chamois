@@ -33,12 +33,16 @@ class Page:
   # displayed:
   def prelude(self, window):
     window.refresh()
+  def handle_event(self, window):
+    while True:
+      self.event, self.values = window.read()
+      if self.event in ['space:65', WIN_CLOSED]:
+        break
+    self.deactivate()
   def deactivate(self):
     self.endtime = time.time()
     self.column.update(visible=False)
     self.completed = True
-  def handle_event(self, window):
-    self.deactivate()
   def get_data(self):
     if not self.completed:
       raise RuntimeError()
@@ -62,38 +66,19 @@ class Instructions(Page):
   pass
 
 class CenteredInstructions(Instructions): 
-  def __init__(self, text, button_text, **kwargs):
+  def __init__(self, text, **kwargs):
     layout = [[VPush()],
               [Text(text, pad=50)],
-              [Button(button_text)],
+              [Text("Press space bar to continue.", pad=50)],
               [VPush()]]
     super().__init__(layout, element_justification="center")
 
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
-  def handle_event(self, window):
+  def prelude(self, window):
     self.screenshot = f'/tmp/{self.item}_{self.condition}_{self.type}.png'
     window.save_window_screenshot_to_disk(self.screenshot)
-    super().handle_event(window)
   
-class ComprehensionTrial(ExperimentalTrial):
-  def __init__(self, item, condition, s, q):
-    layout = [[VPush()],
-              [Text(s)],
-              [Text(q)],
-              random.sample([Yes(), No()], 2),
-              [VPush()]]
-    super().__init__(layout)
-    self.item      = item
-    self.condition = condition
-    self.s         = s
-    self.q         = q
-    self.stimulus = f'{self.s} : {self.q}'
-    self.response  = None
-  def handle_event(self, window):
-    super().handle_event(window)
-    self.response = self.event
-
 # TODO Specify size in visual field degrees (adapts to screen size,
 # distance, ...).
 class FixationCross(Graph):
@@ -131,8 +116,7 @@ class ReadingTrial(ExperimentalTrial):
     self.words = [Text(w, visible=False) for w in s.split()]
     layout = [[VPush()],
               [fc] + self.words,
-              [VPush()],
-              [Push(), Button("Next")]]
+              [VPush()]]
     super().__init__(layout, vertical_alignment="center")
     self.item      = item
     self.condition = condition
@@ -155,12 +139,19 @@ class ReadingTrial(ExperimentalTrial):
       w, h = w.get_size()
       self.aois.append(f'{x},{y},{x+w},{y+h}')
     self.metadata = ";".join(self.aois)
+    super().prelude(window)
+  def handle_event(self, window):
+    while True:
+      self.event, self.values = window.read()
+      if self.event == 'space:65':
+        break
+    self.deactivate()
 
 class YesNoQuestionTrial(ExperimentalTrial):
   def __init__(self, item, condition, q):
     layout = [[VPush()],
               [Text(q, pad=50)],
-              random.sample([Yes(), No()], 2),
+              random.sample([Yes(bind_return_key=False), No(bind_return_key=False)], 2),
               [VPush()]]
     super().__init__(layout, element_justification="center")
     self.item      = item
@@ -168,8 +159,28 @@ class YesNoQuestionTrial(ExperimentalTrial):
     self.stimulus  = q
     self.response  = None
   def handle_event(self, window):
-    super().handle_event(window)
+    while True:
+      self.event, self.values = window.read()
+      print(self.event)
+      if self.event.startswith("Yes") or self.event.startswith("No") or self.event == WIN_CLOSED:
+        break
+    self.deactivate()
     self.response = re.sub(r'\d+$', '', self.event)
+
+class ComprehensionTrial(YesNoQuestionTrial):
+  def __init__(self, item, condition, s, q):
+    layout = [[VPush()],
+              [Text(s)],
+              [Text(q)],
+              random.sample([Yes(bind_return_key=False), No(bind_return_key=False)], 2),
+              [VPush()]]
+    super().__init__(layout)
+    self.item      = item
+    self.condition = condition
+    self.s         = s
+    self.q         = q
+    self.stimulus = f'{self.s} : {self.q}'
+    self.response  = None
 
 class SubjectIDPage(Page):
   def __init__(self):
@@ -180,7 +191,11 @@ class SubjectIDPage(Page):
               [VPush()]]
     super().__init__(layout, vertical_alignment="center")
   def handle_event(self, window):
-    super().handle_event(window)
+    while True:
+      self.event, self.values = window.read()
+      if self.event in ["Next", WIN_CLOSED]:
+        break
+    self.deactivate()
     self.response = self.values["-SUBJECTID-"]
 
 def run_experiment(pages):
@@ -188,7 +203,7 @@ def run_experiment(pages):
   layout = [[p.column for p in pages if isinstance(p, Page)]]
   wrapper_layout = [[ProgressBar(len(layout[0])-1, orientation='h', expand_x=True, size=(20, 20), key='-PBAR-')],
                     [Column(layout, expand_x=True, expand_y=True)]]
-  window = Window('Experiment', wrapper_layout, keep_on_top=True, resizable=True, font="Courier 17").Finalize()
+  window = Window('Experiment', wrapper_layout, keep_on_top=True, resizable=True, font="Courier 17", return_keyboard_events=True).Finalize()
   window.Maximize()
   # Run experiment:
   i = 0
