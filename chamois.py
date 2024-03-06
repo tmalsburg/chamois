@@ -36,7 +36,7 @@ class Page:
   def handle_event(self, window):
     while True:
       self.event, self.values = window.read()
-      if self.event in ['space:65', WIN_CLOSED]:
+      if self.event.startswith('space:') or self.event == WIN_CLOSED:
         break
     self.deactivate()
   def deactivate(self):
@@ -143,7 +143,7 @@ class ReadingTrial(ExperimentalTrial):
   def handle_event(self, window):
     while True:
       self.event, self.values = window.read()
-      if self.event == 'space:65':
+      if self.event.startswith('space:') or self.event == WIN_CLOSED:
         break
     self.deactivate()
 
@@ -192,7 +192,7 @@ class SubjectIDPage(Page):
   def handle_event(self, window):
     while True:
       self.event, self.values = window.read()
-      if self.event.startswith("Return") or self.event == WIN_CLOSED:
+      if self.event.startswith("Return:") or self.event == WIN_CLOSED:
         break
     self.deactivate()
     self.response = self.values["-SUBJECTID-"]
