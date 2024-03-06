@@ -265,7 +265,7 @@ def next_latin_square_list_label(target_sentences):
   filename = "tested_latin_square_lists.txt"
   items, conditions = check_latin_square(target_sentences)
   if not os.path.isfile(filename):
-    latin_square_list_label = 0
+    latin_square_list_label = conditions[0]
   else:
     with open(filename, 'r') as file:
       previous_lists = [line.strip() for line in file if line.strip()]
