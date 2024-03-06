@@ -151,8 +151,8 @@ class YesNoQuestionTrial(ExperimentalTrial):
   def __init__(self, item, condition, q):
     layout = [[VPush()],
               [Text(q, pad=50)],
-              random.sample([Yes(bind_return_key=False), No(bind_return_key=False)], 2),
-              [VPush()]]
+              [VPush()],
+              [Text("[f] key for “no” — [j] key for “yes”", font="Courier 14", text_color="grey79")]]
     super().__init__(layout, element_justification="center")
     self.item      = item
     self.condition = condition
@@ -161,11 +161,15 @@ class YesNoQuestionTrial(ExperimentalTrial):
   def handle_event(self, window):
     while True:
       self.event, self.values = window.read()
-      print(self.event)
-      if self.event.startswith("Yes") or self.event.startswith("No") or self.event == WIN_CLOSED:
+      if self.event.startswith("f:") or self.event.startswith("j:") or self.event == WIN_CLOSED:
         break
     self.deactivate()
-    self.response = re.sub(r'\d+$', '', self.event)
+    if self.event.startswith("f:"):
+      self.response = "no"
+    elif self.event.startswith("j:"):
+      self.response = "yes"
+    else:
+      raise RuntimeError()
 
 class ComprehensionTrial(YesNoQuestionTrial):
   def __init__(self, item, condition, s, q):
