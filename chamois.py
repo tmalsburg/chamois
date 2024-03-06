@@ -13,7 +13,6 @@ class Page:
     self.column     = Column(layout, visible=False, expand_x=True, expand_y=True, **kwargs)
     self.event      = None
     self.values     = None
-    self.started    = False
     self.completed  = False
     self.type       = type(self).__name__
     self.starttime  = None
@@ -27,7 +26,6 @@ class Page:
   # Activate the page as defined at creation.
   def activate(self, window):
     self.column.update(visible=True)
-    self.started = True
     self.starttime = time.time()
     self.prelude(window)
     self.handle_event(window)
@@ -36,15 +34,10 @@ class Page:
   def prelude(self, window):
     window.refresh()
   def deactivate(self):
-    if not self.started:
-      raise RuntimeError()
     self.endtime = time.time()
     self.column.update(visible=False)
     self.completed = True
   def handle_event(self, window):
-    if not self.started:
-      raise RuntimeError()
-    self.event, self.values = window.read()
     self.deactivate()
   def get_data(self):
     if not self.completed:
