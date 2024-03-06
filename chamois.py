@@ -187,18 +187,17 @@ class SubjectIDPage(Page):
     layout = [[VPush()],
               [Text("Please enter participant ID:")],
               [Input("", key="-SUBJECTID-")],
-              [Button("Next")],
               [VPush()]]
     super().__init__(layout, vertical_alignment="center")
   def handle_event(self, window):
     while True:
       self.event, self.values = window.read()
-      if self.event in ["Next", WIN_CLOSED]:
+      if self.event.startswith("Return") or self.event == WIN_CLOSED:
         break
     self.deactivate()
     self.response = self.values["-SUBJECTID-"]
 
-def run_experiment(pages):
+def run_experiment(pages, session_id):
   # Set up window:
   layout = [[p.column for p in pages if isinstance(p, Page)]]
   wrapper_layout = [[ProgressBar(len(layout[0])-1, orientation='h', expand_x=True, size=(20, 20), key='-PBAR-')],
