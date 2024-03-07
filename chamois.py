@@ -2,7 +2,7 @@
 from PySimpleGUI import *
 theme('Default1')
 
-import time, random, re, math, uuid, os
+import time, random, re, math, uuid, os, sys
 from collections import Counter
 
 # latin_square_list_idx = None
@@ -77,8 +77,11 @@ class CenteredInstructions(Instructions):
 class ExperimentalTrial(Page):
   def prelude(self, window):
     self.screenshot = f'/tmp/{self.item}_{self.condition}_{self.type}.png'
-    window.save_window_screenshot_to_disk(self.screenshot)
-  
+    try:
+      window.save_window_screenshot_to_disk(self.screenshot)
+    except:
+      sys.stderr.write(f"Warning: Screenshot failed: {self.screenshot}\n")
+
 # TODO Specify size in visual field degrees (adapts to screen size,
 # distance, ...).
 class FixationCross(Graph):
