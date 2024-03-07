@@ -37,8 +37,6 @@ random.shuffle(stimuli)
 
 # Structure of the experiment:
 
-session_id = uuid.uuid4()
-
 # An experiment consists of a series of pages:
 pages = []
 
@@ -77,5 +75,5 @@ pages.append(
 pages.append(Message("End of session"))
 
 # Run experiment:
-run_experiment(pages, session_id)
+run_experiment(pages)
 

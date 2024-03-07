@@ -75,7 +75,8 @@ class CenteredInstructions(Instructions):
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
   def prelude(self, window):
-    self.screenshot = f'/tmp/{self.item}_{self.condition}_{self.type}.png'
+    global session_id
+    self.screenshot = "%s_%s_%03d_%s.png" % (session_id, self.type, self.item, self.condition)
     try:
       window.save_window_screenshot_to_disk(self.screenshot)
     except:
@@ -203,7 +204,9 @@ class SubjectIDPage(Page):
     self.deactivate()
     self.response = self.values["-SUBJECTID-"]
 
-def run_experiment(pages, session_id):
+def run_experiment(pages):
+  global session_id
+  session_id = uuid.uuid4()
   # Set up window:
   layout = [[p.column for p in pages if isinstance(p, Page)]]
   wrapper_layout = [[ProgressBar(len(layout[0])-1, orientation='h', expand_x=True, size=(20, 20), key='-PBAR-')],
