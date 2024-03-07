@@ -5,8 +5,6 @@ theme('Default1')
 import time, random, re, math, uuid, os, sys
 from collections import Counter
 
-# latin_square_list_idx = None
-
 class Page:
   def __init__(self, layout, **kwargs):
     self.layout     = layout
@@ -22,7 +20,8 @@ class Page:
     self.stimulus   = None
     self.response   = None
     self.screenshot = None
-    self.metadata   = None
+    self.metadata1  = None
+    self.metadata2  = None
   # Activate the page as defined at creation.
   def activate(self, window):
     self.column.update(visible=True)
@@ -46,19 +45,19 @@ class Page:
   def get_data(self):
     if not self.completed:
       raise RuntimeError()
-    return (self.type, self.starttime, self.endtime, self.item, self.condition, self.stimulus, self.response, self.screenshot, self.metadata)
+    return (self.type, self.starttime, self.endtime, self.item, self.condition, self.stimulus, self.response, self.screenshot, self.metadata1, self.metadata2)
 
 # Message shares an interface with Page but is not itself a page since
 # it is not part of the GUI.
 class Message:
   def __init__(self, message):
     self.type      = type(self).__name__
-    self.metadata  = message
+    self.metadata1 = message
     self.starttime = None
   def activate(self, _):
     self.starttime = time.time()
   def get_data(self):
-    return (self.type, self.starttime, None, None, None, None, None, None, self.metadata)
+    return (self.type, self.starttime, None, None, None, None, None, None, self.metadata1, None)
 
 # Separate class to make a page show up in the results as
 # "Instructions".
@@ -141,7 +140,7 @@ class ReadingTrial(ExperimentalTrial):
       x, y = w.widget.winfo_rootx(), w.widget.winfo_rooty()
       w, h = w.get_size()
       self.aois.append(f'{x},{y},{x+w},{y+h}')
-    self.metadata = ";".join(self.aois)
+    self.metadata1 = ";".join(self.aois)
     super().prelude(window)
   def handle_event(self, window):
     while True:
@@ -222,7 +221,7 @@ def run_experiment(pages, session_id):
   # Save data:
   filename = f"{session_id}_log.tsv"
   with open(filename, "w") as f:
-    f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata\n"]))
+    f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2", \n"]))
     for t in [p.get_data() for p in pages]:
       t = tuple(str(v) if v!=None else '' for v in t)
       print(','.join(t))
