@@ -137,10 +137,13 @@ class ReadingTrial(ExperimentalTrial):
     window.refresh()
     # Calculate AOIs:
     self.aois = []
-    for w in self.words:
+    ww, wh = window.size
+    for i,w in enumerate(self.words):
       x, y = w.widget.winfo_rootx(), w.widget.winfo_rooty()
       w, h = w.get_size()
       self.aois.append(f'{x},{y},{x+w},{y+h}')
+      if w<20: # FIXME: Need a better diagnostic for overflowing words.
+        sys.stderr.write("Warning: AOI extends beyond window boundaries.\n")
     self.metadata1 = ";".join(self.aois)
     super().prelude(window)
   def handle_event(self, window):
@@ -205,7 +208,7 @@ class SubjectIDPage(Page):
     self.response = self.values["-SUBJECTID-"]
 
 def run_experiment(pages):
-  global session_id
+  global window, session_id
   session_id = uuid.uuid4()
   # Set up window:
   layout = [[p.column for p in pages if isinstance(p, Page)]]
