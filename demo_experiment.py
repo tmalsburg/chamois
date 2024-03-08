@@ -8,6 +8,10 @@ theme('Black')
 # See here for all available themes:
 # https://media.geeksforgeeks.org/wp-content/uploads/20200511200254/f19.jpg
 
+font = "FantasqueSansMono"
+fontsize = 22
+wordspacing = 18
+
 # Stimuli:
 
 practice_sentence = [

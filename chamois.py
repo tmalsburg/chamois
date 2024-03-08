@@ -116,7 +116,7 @@ class FixationCross(Graph):
 class ReadingTrial(ExperimentalTrial):
   def __init__(self, item, condition, s):
     self.fixation_cross = fc = FixationCross()
-    self.words = [Text(w, visible=False) for w in s.split()]
+    self.words = [Text(w, pad=int(wordspacing/2), visible=False) for w in s.split()]
     layout = [[VPush()],
               [fc] + self.words,
               [VPush()]]
@@ -155,7 +155,7 @@ class YesNoQuestionTrial(ExperimentalTrial):
     layout = [[VPush()],
               [Text(q, pad=50)],
               [VPush()],
-              [Text("[f] key for “no” — [j] key for “yes”", font="Courier 14", text_color="grey79")]]
+              [Text("[f] key for “no” — [j] key for “yes”", font=f"{font} {int(fontsize*0.7)}", text_color="grey79")]]
     super().__init__(layout, element_justification="center")
     self.item      = item
     self.condition = condition
@@ -211,8 +211,9 @@ def run_experiment(pages):
   layout = [[p.column for p in pages if isinstance(p, Page)]]
   wrapper_layout = [[ProgressBar(len(layout[0])-1, orientation='h', expand_x=True, size=(20, 20), key='-PBAR-')],
                     [Column(layout, expand_x=True, expand_y=True)]]
-  window = Window('Experiment', wrapper_layout, keep_on_top=True, resizable=True, font="Courier 17", return_keyboard_events=True).Finalize()
+  window = Window('Experiment', wrapper_layout, keep_on_top=False, resizable=True, font=f"{font} {fontsize}", return_keyboard_events=True).Finalize()
   window.Maximize()
+  window.TKroot["cursor"] = "none"
   # Run experiment:
   i = 0
   for p in pages:
