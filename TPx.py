@@ -5,9 +5,10 @@ import pandas as pd
 
 class TPx:
   def activate(self):
+    pass
+  def start_recording(self):
     dp.DPxOpen()
     dp.DPxSetTPxAwake()
-  def start_recording(self):
     self.TPxSetupSchedule = dp.TPxSetupSchedule()
     dp.TPxStartSchedule()
     dp.DPxUpdateRegCache()
@@ -23,13 +24,14 @@ class TPx:
                'DigitalOut', 'LeftEyeFixationFlag', 'RightEyeFixationFlag',
                'LeftEyeSaccadeFlag', 'RightEyeSaccadeFlag', 'MessageCode',
                'LeftEyeRawX', 'LeftEyeRawY', 'RightEyeRawX', 'RightEyeRawY']
-    return pd.DataFrame(data, columns=columns)
-  def shut_down(self):
     dp.DPxSetTPxSleep()
     dp.DPxUpdateRegCache()
     dp.DPxClose()
-  def calibrate(self):
-    TPxSimpleCalibration()
+    return pd.DataFrame(data, columns=columns)
+  def shut_down(self):
+    pass
+  def calibrate(self, skipCameraSetup=False):
+    TPxSimpleCalibration(skipCameraSetup)
 
 # Chamois ReadingTrial but with TRACKPixx3 recording:
 
@@ -45,9 +47,27 @@ class TPxReadingTrial(ReadingTrial):
     self.tpx.stop_recording()
     super().deactivate()
     data_frame = self.tpx.retrieve_data()
-    filename = "%s_%s_%03d_%s.tsv" % (session_id, self.type, self.item, self.condition)
+    filename = "%s_%s_%03d_%s.csv" % (session_id, self.type, self.item, self.condition)
     data_frame.to_csv(filename, index=False)
     self.metadata2 = filename
+
+# Message shares an interface with Page but is not itself a page since
+# it is not part of the GUI.
+class TPxCalibration():
+  def __init__(self, tpx):
+    self.type      = type(self).__name__
+    self.tpx       = tpx
+    self.starttime = None
+  def activate(self, _):
+    self.starttime = time.time()
+    self.tpx.calibrate()
+  def get_data(self):
+    return (self.type, self.starttime, None, None, None, None, None, None, None, None)
+
+class TPxQuickCalibration(TPxCalibration):
+  def activate(self, _):
+    self.starttime = time.time()
+    self.tpx.calibrate(True)
 
 #
 # TPxSimpleCalibration.py
@@ -58,10 +78,10 @@ from psychopy import visual, iohub, core
 import numpy as np
 import PIL
 
-def TPxSimpleCalibration():
+def TPxSimpleCalibration(skipCameraSetup=False):
 
     calibrationSuccess = False # Return whether the camera is calibrated
-    screenNumber = 1 # Screen number of monitor to be used for experiment. Minus one from the number assigned by the OS (e.g., 1 is actually screen 2).
+    screenNumber = 0 # Screen number of monitor to be used for experiment. Minus one from the number assigned by the OS (e.g., 1 is actually screen 2).
     ledIntensity = 8 # Intensity of infrared illuminator
     approximateIrisSize = 140 # There is no rule of thumb for this value. Set this in PyPixx to be sure.
 
@@ -76,6 +96,7 @@ def TPxSimpleCalibration():
 
     # Set up PsychoPy
     windowPtr = visual.Window(fullscr=True,color=-1,screen=screenNumber) # Open a black PsychoPy window
+    windowPtr.setMouseVisible(False)  # FIXME: Doesn't hide cursor.
     windowRect = windowPtr.size # Get window dimensions
     io = iohub.launchHubServer() # Record key strokes with PsychoPy
 
@@ -90,27 +111,28 @@ def TPxSimpleCalibration():
     textStim.pos = (0,-windowRect[1]/2)
 
     ######################### SCREEN 1: Start screen ##########################
-    while True:
-        if ((t2 - t) > 1/60): # Just refresh at 60 Hz
-            # Get static image of eye from TPx. Draw to screen.
-            dp.DPxUpdateRegCache()
-            imageStim = visual.SimpleImageStim(windowPtr,image=PIL.Image.fromarray(dp.TPxGetEyeImage()),units='pix',pos=(0,0))
-            drawCollection( [imageStim, textStim] ) # See below for definition
-            windowPtr.flip()
-            t = t2
-        else:
-            dp.DPxUpdateRegCache()
-            t2 = dp.DPxGetTime() # Get most recent time stamp
+    if not skipCameraSetup:
+      while True:
+          if ((t2 - t) > 1/60): # Just refresh at 60 Hz
+              # Get static image of eye from TPx. Draw to screen.
+              dp.DPxUpdateRegCache()
+              imageStim = visual.SimpleImageStim(windowPtr,image=PIL.Image.fromarray(dp.TPxGetEyeImage()),units='pix',pos=(0,0))
+              drawCollection( [imageStim, textStim] ) # See below for definition
+              windowPtr.flip()
+              t = t2
+          else:
+              dp.DPxUpdateRegCache()
+              t2 = dp.DPxGetTime() # Get most recent time stamp
 
-        # Check for key presses
-        events = io.devices.keyboard.state
-        if events:
-            keys = list(events.keys())
-            if 'escape' in keys:
-                escape(windowPtr,io)
-                return False
-            elif 'return' in keys:
-                break
+          # Check for key presses
+          events = io.devices.keyboard.state
+          if events:
+              keys = list(events.keys())
+              if 'escape' in keys:
+                  escape(windowPtr,io)
+                  return False
+              elif 'return' in keys:
+                  break
 
     ###################### SCREEN 2: Calibration routine ######################
     cx = windowRect[0]/2 # Screen center x coordinate
