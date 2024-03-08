@@ -125,13 +125,13 @@ class ReadingTrial(ExperimentalTrial):
     self.condition = condition
     self.stimulus  = s
   def prelude(self, window):
-    t = 450
-    while t > 40:
+    t = 200
+    while t > 10:
       self.fixation_cross.draw()
       window.read(timeout=30+t)
       self.fixation_cross.erase()
       window.read(timeout=30+t/2)
-      t *= 0.65
+      t *= 0.55
     for w in self.words:
       w.update(visible=True)
     window.refresh()
