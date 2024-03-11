@@ -69,12 +69,13 @@ class Instructions(Page):
   pass
 
 class CenteredInstructions(Instructions): 
-  def __init__(self, text, **kwargs):
+  def __init__(self, instructions, **kwargs):
     layout = [[VPush()],
-              [Text(text, pad=50)],
+              [Text(instructions, pad=50)],
               [Text("Press space bar to continue.", pad=50)],
               [VPush()]]
     super().__init__(layout, element_justification="center")
+    self.stimulus = instructions
 
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
