@@ -1,14 +1,14 @@
 
-Chamois is a Python application that aims to make eye-tracking experiments on reading behavior as easy as possible.  The focus is on stimulus presentation.  Chamois doesn’t support any particular eye-tracker out of the box.  But it is relatively easy to make it work with any eye-tracker that has a Python API.
+Chamois is a Python application that aims to make eye-tracking experiments on reading behavior as easy as possible.  The focus is on stimulus presentation and recording of user responses.  Chamois doesn’t support any particular eye-tracker out of the box.  But it is relatively easy to make it work with any eye-tracker that has a Python API.  Over time, examples for various eye-trackers will be included in this repository which can then be used as templates.
 
-Current status: I wrote Chamois for my own lab and share it without any warranty.  It largely works, but is still at a very early stage of development.  Don’t use it for serious work!
+Current status: I wrote Chamois for my own lab and share it without any warranty.  It largely works, but is still in early stages of development may have some rough edges.
 
 Key features:
 - Chamois is inspired by Ibex: Configuration and data format are similar but much simpler.
 - Support for Latin square designs.  Just drop your sentences and you’re good to go.
-- Can be combined with most eye-trackers via PyGaze and manufacturer-provided APIs such as pylink and pypixx.
+- Can be combined with most eye-trackers via PyGaze.  Direct use of manufacturer APIs such as pylink and pypixx is possible, too.
 - Runs on Linux, MacOS, and Windows.  Only dependency is [PySimpleGui](https://www.pysimplegui.org).
-- With only around 250 lines of code, Chamois is easy to hack even for users with basic Python knowledge.
+- With only around 300 lines of code, Chamois is easy to hack even for users with only basic Python knowledge.
 
 # Demo experiment
 
@@ -49,18 +49,25 @@ exec(open("chamois.py").read())
 # Change theme:
 theme('Black')
 
+font = "Courier"
+fontsize = 22
+wordspacing = 18
+
+# Structure of the experiment:
 pages = []
+
 # A message stored in the results file along with a time stamp:
 pages.append(Message("Start of session"))
 
 # Welcome screen:
 pages.append(
-  CenteredInstructions("Welcome to this study!", "Continue"))
+  CenteredInstructions("Welcome to this study!"))
 
 # Asks user to enter subject ID:
 pages.append(SubjectIDPage())
 
-# Experimental trials:
+# Experimental trials with comprehension question after 50% of the
+# sentences:
 for i,c,s,q in stimuli:
   pages.append(ReadingTrial(i,c,s))
   if random.choice([True, False]):
@@ -68,7 +75,7 @@ for i,c,s,q in stimuli:
 
 # Thank-you screen:
 pages.append(
-  CenteredInstructions("Thank you for your participation!", "Exit"))
+  CenteredInstructions("Thank you for your participation!"))
 
 # A message stored in the results file along with a time stamp:
 pages.append(Message("End of session"))
