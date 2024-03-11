@@ -21,7 +21,7 @@ class Page:
     self.endtime    = None
     self.item       = None
     self.condition  = None
-    self.text       = None
+    self.stimulus   = None
     self.response   = None
     self.screenshot = None
     self.metadata1  = None
@@ -49,7 +49,7 @@ class Page:
   def get_data(self):
     if not self.completed:
       raise RuntimeError()
-    return (self.type, self.starttime, self.endtime, self.item, self.condition, self.text, self.response, self.screenshot, self.metadata1, self.metadata2)
+    return (self.type, self.starttime, self.endtime, self.item, self.condition, self.stimulus, self.response, self.screenshot, self.metadata1, self.metadata2)
 
 # Message shares an interface with Page but is not itself a page since
 # it is not part of the GUI.
@@ -126,7 +126,7 @@ class ReadingTrial(ExperimentalTrial):
     super().__init__(layout, vertical_alignment="center")
     self.item      = item
     self.condition = condition
-    self.text  = text
+    self.stimulus  = text
   def prelude(self, window):
     t = 200
     while t > 10:
@@ -150,7 +150,7 @@ class ReadingTrial(ExperimentalTrial):
     first_word_width = self.words[0].widget.winfo_width()
     first_word_start = self.words[0].widget.winfo_rootx()
     char_width = (first_word_width - 4) / first_word_length
-    last_word_end = first_word_start + char_width * len(''.join(self.text.split())) + 4 * len(self.words) + wordspacing * (len(self.words)-1)
+    last_word_end = first_word_start + char_width * len(''.join(self.stimulus.split())) + 4 * len(self.words) + wordspacing * (len(self.words)-1)
     if (window_width < last_word_end):
       raise RuntimeError("Text extends beyond window boundaries.")
     self.metadata1 = ";".join(self.aois)
@@ -171,7 +171,7 @@ class YesNoQuestionTrial(ExperimentalTrial):
     super().__init__(layout, element_justification="center")
     self.item      = item
     self.condition = condition
-    self.text      = question
+    self.stimulus  = question
     self.response  = None
   def handle_event(self, window):
     while True:
@@ -198,7 +198,7 @@ class ComprehensionTrial(YesNoQuestionTrial):
     self.condition = condition
     self.s         = s
     self.q         = q
-    self.text      = f'{self.s} : {self.q}'
+    self.stimulus  = f'{self.s} : {self.q}'
     self.response  = None
 
 class SubjectIDPage(Page):
@@ -245,6 +245,7 @@ def run_experiment(pages):
   # Update our on-disk memory of completed lists:
   with open('tested_latin_square_lists.txt', 'a') as file:
     file.write(f'{latin_square_list_label}\n')
+  print(f"Experiment finished.  Session ID was: {session_id}")
 
 def check_latin_square(target_sentences):
   # Checks that all items have the same number of sentence:
