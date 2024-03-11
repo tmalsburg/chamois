@@ -143,15 +143,14 @@ class ReadingTrial(ExperimentalTrial):
     for i,word in enumerate(self.words):
       x, y = word.widget.winfo_rootx(), word.widget.winfo_rooty()
       w, h = word.get_size()
-      print("width:", word.get_size()[0], word.widget.winfo_width())
       self.aois.append(f'{x},{y},{x+w},{y+h}')
     # Check whether text extends beyond screen:
     window_width, _ = window.size
     first_word_length = len(self.words[0].get())
     first_word_width = self.words[0].widget.winfo_width()
     first_word_start = self.words[0].widget.winfo_rootx()
-    char_width = first_word_width / first_word_length
-    last_word_end = first_word_start + char_width * len(''.join(self.text.split())) + wordspacing * (len(self.words)-1)
+    char_width = (first_word_width - 4) / first_word_length
+    last_word_end = first_word_start + char_width * len(''.join(self.text.split())) + 4 * len(self.words) + wordspacing * (len(self.words)-1)
     if (window_width < last_word_end):
       raise RuntimeError("Text extends beyond window boundaries.")
     self.metadata1 = ";".join(self.aois)
