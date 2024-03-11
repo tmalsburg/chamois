@@ -5,6 +5,10 @@ theme('Default1')
 import time, random, re, math, uuid, os, sys
 from collections import Counter
 
+font = "Courier"
+fontsize = 22
+wordspacing = 18
+
 class Page:
   def __init__(self, layout, **kwargs):
     self.layout     = layout
@@ -17,7 +21,7 @@ class Page:
     self.endtime    = None
     self.item       = None
     self.condition  = None
-    self.stimulus   = None
+    self.text       = None
     self.response   = None
     self.screenshot = None
     self.metadata1  = None
@@ -45,7 +49,7 @@ class Page:
   def get_data(self):
     if not self.completed:
       raise RuntimeError()
-    return (self.type, self.starttime, self.endtime, self.item, self.condition, self.stimulus, self.response, self.screenshot, self.metadata1, self.metadata2)
+    return (self.type, self.starttime, self.endtime, self.item, self.condition, self.text, self.response, self.screenshot, self.metadata1, self.metadata2)
 
 # Message shares an interface with Page but is not itself a page since
 # it is not part of the GUI.
@@ -113,7 +117,7 @@ class FixationCross(Graph):
                    fill_color="red")
 
 class ReadingTrial(ExperimentalTrial):
-  def __init__(self, item, condition, s):
+  def __init__(self, item, condition, text):
     self.fixation_cross = fc = FixationCross()
     self.words = [Text(w, pad=int(wordspacing/2), visible=False) for w in s.split()]
     layout = [[VPush()],
@@ -122,7 +126,7 @@ class ReadingTrial(ExperimentalTrial):
     super().__init__(layout, vertical_alignment="center")
     self.item      = item
     self.condition = condition
-    self.stimulus  = s
+    self.text  = text
   def prelude(self, window):
     t = 200
     while t > 10:
@@ -136,13 +140,20 @@ class ReadingTrial(ExperimentalTrial):
     window.refresh()
     # Calculate AOIs:
     self.aois = []
-    ww, wh = window.size
-    for i,w in enumerate(self.words):
-      x, y = w.widget.winfo_rootx(), w.widget.winfo_rooty()
-      w, h = w.get_size()
+    for i,word in enumerate(self.words):
+      x, y = word.widget.winfo_rootx(), word.widget.winfo_rooty()
+      w, h = word.get_size()
+      print("width:", word.get_size()[0], word.widget.winfo_width())
       self.aois.append(f'{x},{y},{x+w},{y+h}')
-      if w<20: # FIXME: Need a better diagnostic for overflowing words.
-        sys.stderr.write("Warning: AOI extends beyond window boundaries.\n")
+    # Check whether text extends beyond screen:
+    window_width, _ = window.size
+    first_word_length = len(self.words[0].get())
+    first_word_width = self.words[0].widget.winfo_width()
+    first_word_start = self.words[0].widget.winfo_rootx()
+    char_width = first_word_width / first_word_length
+    last_word_end = first_word_start + char_width * len(''.join(self.text.split())) + wordspacing * (len(self.words)-1)
+    if (window_width < last_word_end):
+      raise RuntimeError("Text extends beyond window boundaries.")
     self.metadata1 = ";".join(self.aois)
     super().prelude(window)
   def handle_event(self, window):
@@ -153,7 +164,7 @@ class ReadingTrial(ExperimentalTrial):
     self.deactivate()
 
 class YesNoQuestionTrial(ExperimentalTrial):
-  def __init__(self, item, condition, q):
+  def __init__(self, item, condition, question):
     layout = [[VPush()],
               [Text(q, pad=50)],
               [VPush()],
@@ -161,7 +172,7 @@ class YesNoQuestionTrial(ExperimentalTrial):
     super().__init__(layout, element_justification="center")
     self.item      = item
     self.condition = condition
-    self.stimulus  = q
+    self.text      = question
     self.response  = None
   def handle_event(self, window):
     while True:
@@ -188,7 +199,7 @@ class ComprehensionTrial(YesNoQuestionTrial):
     self.condition = condition
     self.s         = s
     self.q         = q
-    self.stimulus = f'{self.s} : {self.q}'
+    self.text      = f'{self.s} : {self.q}'
     self.response  = None
 
 class SubjectIDPage(Page):

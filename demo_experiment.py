@@ -8,7 +8,7 @@ theme('Black')
 # See here for all available themes:
 # https://media.geeksforgeeks.org/wp-content/uploads/20200511200254/f19.jpg
 
-font = "FantasqueSansMono"
+font = "Courier"
 fontsize = 22
 wordspacing = 18
 
