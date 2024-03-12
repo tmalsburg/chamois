@@ -29,7 +29,7 @@ class Page:
   # Activate the page as defined at creation.
   def activate(self, window):
     self.column.update(visible=True)
-    self.starttime = time.time()
+    self.starttime = round(time.time() - exp_starttime, 3)
     self.prelude(window)
     self.handle_event(window)
   # Optional stage-setting that can only be performed once the page is
@@ -43,13 +43,13 @@ class Page:
         break
     self.deactivate()
   def deactivate(self):
-    self.endtime = time.time()
+    self.endtime = round(time.time() - exp_starttime, 3)
     self.column.update(visible=False)
     self.completed = True
   def get_data(self):
     if not self.completed:
       raise RuntimeError()
-    return (self.type, self.starttime, self.endtime, self.item, self.condition, self.stimulus, self.response, self.screenshot, self.metadata1, self.metadata2)
+    return (self.type, f"{self.starttime:.3f}", f"{self.endtime:.3f}", self.item, self.condition, self.stimulus, self.response, self.screenshot, self.metadata1, self.metadata2)
 
 # Message shares an interface with Page but is not itself a page since
 # it is not part of the GUI.
@@ -59,9 +59,10 @@ class Message:
     self.metadata1 = message
     self.starttime = None
   def activate(self, _):
-    self.starttime = time.time()
+    self.starttime = round(time.time() - exp_starttime, 3)
   def get_data(self):
-    return (self.type, self.starttime, None, None, None, None, None, None, self.metadata1, None)
+    # TODO: Make sure to show 3 digits in start and endtime.
+    return (self.type, f"{self.starttime:.3f}", None, None, None, None, None, None, self.metadata1, None)
 
 # Separate class to make a page show up in the results as
 # "Instructions".
@@ -218,7 +219,7 @@ class SubjectIDPage(Page):
     self.response = self.values["-SUBJECTID-"]
 
 def run_experiment(pages):
-  global window, session_id
+  global window, session_id, exp_starttime
   session_id = uuid.uuid4()
   # Set up window:
   layout = [[p.column for p in pages if isinstance(p, Page)]]
@@ -228,6 +229,7 @@ def run_experiment(pages):
   window.Maximize()
   window.TKroot["cursor"] = "none"
   # Run experiment:
+  exp_starttime = time.time()
   i = 0
   for p in pages:
     p.activate(window)
@@ -246,7 +248,7 @@ def run_experiment(pages):
   # Update our on-disk memory of completed lists:
   with open('tested_latin_square_lists.txt', 'a') as file:
     file.write(f'{latin_square_list_label}\n')
-  print(f"Experiment finished.  Session ID was: {session_id}")
+  print(f"Experiment finished.\nSession ID: {session_id}")
 
 def check_latin_square(target_sentences):
   # Checks that all items have the same number of sentence:
