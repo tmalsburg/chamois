@@ -1,5 +1,5 @@
 
-Chamois is a Python application that aims to make eye-tracking experiments on reading behavior as easy as possible.  The focus is on stimulus presentation and recording of user responses.  Chamois doesn’t support any particular eye-tracker out of the box.  But it is relatively easy to make it work with any eye-tracker that has a Python API.  Over time, examples for various eye-trackers will be included in this repository which can then be used as templates.
+Chamois is a Python application that aims to make eye-tracking experiments on reading behavior as easy as possible.  The focus is on stimulus presentation and recording of user responses.  Chamois doesn’t support any particular eye-tracker out of the box.  But it is relatively easy to make it work with any eye-tracker that has a Python API.  An simple demo experiment for TRACKPixx3 trackers is linked below.
 
 **Current status:** I wrote Chamois for my own lab and share it without any warranty.  It largely works, but is still in early stages of development may have some rough edges.
 
@@ -13,7 +13,11 @@ Chamois is a Python application that aims to make eye-tracking experiments on re
 
 # Demo experiment
 
-Below is the code for a very simple experiment with 3 items, 2 conditions, 2 fillers, no practice sentences.
+Below is the code for a very simple experiment with 3 items, 2 conditions, 2 fillers, but no practice sentences.
+
+Two slightly more elaborate examples:
+- [demo_experiment.py](https://github.com/tmalsburg/chamois/blob/main/demo_experiment.py): As below but with practice sentences.
+- [demo_experiment_tpx.py](https://github.com/tmalsburg/chamois/blob/main/demo_experiment_tpx.py): As below but with practice sentences and recording of eye movement using a [TRACKPixx3](https://vpixx.com/products/trackpixx/) eye-tracker.  Note how the code for this experiment differes only minimally from the code for an experiment without eye-tracker.
 
 ## Stimuli
 
@@ -112,7 +116,6 @@ type	starttime	endtime	item	condition	stimulus	response	screenshot	metadata1	met
 Message	0.000							Start of session	
 CenteredInstructions	0.000	14.055			Welcome to this study!				
 SubjectIDPage	14.070	18.509				subject01			
-CenteredInstructions	36.955	40.270			Now, on to the real experiment!				
 ReadingTrial	40.271	43.455	1	b	While Bill hunted the deer that was brown and nimble was hunted by Bill.		1579e43f-2b0d-4370-9169-057397713067_ReadingTrial_001_b.png	77,704,221,761;239,704,355,761;373,704,545,761;563,704,651,761;669,704,785,761;803,704,919,761;937,704,1025,761;1043,704,1187,761;1205,704,1293,761;1311,704,1483,761;1501,704,1589,761;1607,704,1779,761;1797,704,1857,761;1875,704,2019,761	
 YesNoQuestionTrial	43.470	48.545	1	b	Did Bill hunt the deer?	no	1579e43f-2b0d-4370-9169-057397713067_YesNoQuestionTrial_001_b.png		
 ReadingTrial	48.560	52.726	21	filler	No head injury is too trivial to be ignored.		1579e43f-2b0d-4370-9169-057397713067_ReadingTrial_021_filler.png	77,704,137,761;155,704,271,761;289,704,461,761;479,704,539,761;557,704,645,761;663,704,863,761;881,704,941,761;959,704,1019,761;1037,704,1265,761	
