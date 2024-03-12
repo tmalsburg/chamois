@@ -1,16 +1,19 @@
 
 Chamois is a Python application that aims to make eye-tracking experiments on reading behavior as easy as possible.  The focus is on stimulus presentation and recording of user responses.  Chamois doesn’t support any particular eye-tracker out of the box.  But it is relatively easy to make it work with any eye-tracker that has a Python API.  Over time, examples for various eye-trackers will be included in this repository which can then be used as templates.
 
-Current status: I wrote Chamois for my own lab and share it without any warranty.  It largely works, but is still in early stages of development may have some rough edges.
+**Current status:** I wrote Chamois for my own lab and share it without any warranty.  It largely works, but is still in early stages of development may have some rough edges.
 
-Key features:
-- Chamois is inspired by Ibex: Configuration and data format are similar but much simpler.
+**Key features:**
+- Chamois is inspired by Ibex: Configuration and data format are similar but simpler.
+- Aims to implement all the usual best-practices, so that users don’t have to reinvent the wheel.
 - Support for Latin square designs.  Just drop your sentences and you’re good to go.
-- Can be combined with most eye-trackers via PyGaze.  Direct use of manufacturer APIs such as pylink and pypixx is possible, too.
+- Chamois is eye-tracker agnostic and can be combined with almost any eye-tracking system via [PyGaze](https://www.pygaze.org/).  Using manufacturer APIs such as pylink and pypixx is of course also possible.
 - Runs on Linux, MacOS, and Windows.  Only dependency is [PySimpleGui](https://www.pysimplegui.org).
-- With only around 300 lines of code, Chamois is easy to hack even for users with only basic Python knowledge.
+- With only around 300 lines of code, Chamois is easy to hack and extend even for users with only basic Python knowledge.
 
 # Demo experiment
+
+Below is the code for a very simple experiment with 3 items, 2 conditions, 2 fillers, no practice sentences.
 
 ## Stimuli
 
@@ -37,26 +40,25 @@ stimuli += fillers
 random.shuffle(stimuli)
 ```
 
-## Experiment
+## Experiment structure
 
-An experiment consists of a series of “pages” that are displayed one by one.  Different types of pages are predefined but it’s easy to add new types of pages.
+An experiment consists of a series of “pages” that are displayed one by one.  Each page produces one line in the results file.  Various types of pages are predefined (reading trials, acceptability judgment trials), but it’s really easy to add new types of pages.
 
 ``` python
-
 # Load Chamois:
 exec(open("chamois.py").read())
 
-# Change theme:
+# Set the visual theme:
 theme('Black')
-
 font = "Courier"
 fontsize = 22
 wordspacing = 18
 
-# Structure of the experiment:
+# Structure of experiment:
 pages = []
 
-# A message stored in the results file along with a time stamp:
+# A message stored in the results file along with a time stamp (not
+# visible for participant):
 pages.append(Message("Start of session"))
 
 # Welcome screen:
@@ -68,16 +70,17 @@ pages.append(SubjectIDPage())
 
 # Experimental trials with comprehension question after 50% of the
 # sentences:
-for i,c,s,q in stimuli:
-  pages.append(ReadingTrial(i,c,s))
+for item, condition, sentence, question in stimuli:
+  pages.append(ReadingTrial(item, condition, sentence))
   if random.choice([True, False]):
-    pages.append(YesNoQuestionTrial(i,c,q))
+    pages.append(YesNoQuestionTrial(item, condition, question))
 
 # Thank-you screen:
 pages.append(
   CenteredInstructions("Thank you for your participation!"))
 
-# A message stored in the results file along with a time stamp:
+# A message stored in the results file along with a time stamp (again
+# not visible to participat):
 pages.append(Message("End of session"))
 
 # Run experiment:
@@ -102,7 +105,7 @@ run_experiment(pages)
 
 Output comes in tab-separated values format (`.tsv`) and includes the AOIs of the individual words.  Screenshots of the stimulus screens are stored on disk.  All filenames belonging to a session start with the session ID.
 
-Results file:
+Results file (e.g. `49118eac-4846-487e-a2ac-7e5d68a03ab8_log.tsv`):
 
 ``` 
 type	starttime	endtime	item	condition	stimulus	response	screenshot	metadata1	metadata2	
@@ -144,15 +147,15 @@ Note that each column contains only one type of data.  This makes it easy to wor
 
 Columns:
 
-- `type`: The type of page that was displayed (or “Message” which appears only in the results file, not on screen during the experiment).
-- `starttime`: The time at which the page was displayed, in seconds with precision down to milliseconds.  The clock starts at the beginning of the experiment (`0.000`).
-- `endtime`: The time at which the page was left.
-- `item`: The item number of the displayed stimulus (if any).
-- `condition`: The condition of the displayed stimulus (if any).
-- `stimulus`: The displayed stimulus (if any).  Could also be the instructions that were displayed (potentially abbreviated).
-- `response`: The response (if any).
-- `screenshot`: Filename of screenshot of the page if a stimulus was displayed.
-- `metadata1`: Meta data depending on page type.  For ReadingTrials, this column contains the screen coordinates of the AOIs.
-- `metadata2`: More meta data depending on page type.  For TPxReadingTrials, this column contains the file name of the recorded eye-tracking data.
+1. `type`: The type of page that was displayed (or “Message” which appears only in the results file, not on screen during the experiment).
+2. `starttime`: The time at which the page was displayed, in seconds with precision down to milliseconds.  The clock starts at the beginning of the experiment (`0.000`).
+3. `endtime`: The time at which the page was left.
+4. `item`: The item number of the displayed stimulus (if any).
+5. `condition`: The condition of the displayed stimulus (if any).
+6. `stimulus`: The displayed stimulus (if any).  Could also be the instructions that were displayed (potentially abbreviated).
+7. `response`: The response (if any).
+8. `screenshot`: Filename of screenshot of the page if a stimulus was displayed.
+9. `metadata1`: Meta data depending on page type.  For ReadingTrials, this column contains the screen coordinates of the AOIs.
+10. `metadata2`: More meta data depending on page type.  For TPxReadingTrials, this column contains the file name of the recorded eye-tracking data.
 
-The data format of the eye-tracking data depends on the eye-tracker and the user will have to take care of combining Chamois log data (above) and the eye-tracking data in their analysis.
+The data format of the eye-tracking data depends on the eye-tracker and the user will have to take care of combining Chamois log data (above) with the eye-tracking data.  In many cases this will boil down to simply joining two data frames.
