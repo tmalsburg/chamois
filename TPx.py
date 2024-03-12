@@ -4,8 +4,8 @@ from pypixxlib import _libdpx as dp
 import pandas as pd
 
 class TPx:
-  def activate(self):
-    pass
+  def calibrate(self, skipCameraSetup=False):
+    TPxSimpleCalibration(skipCameraSetup)
   def start_recording(self):
     dp.DPxOpen()
     dp.DPxSetTPxAwake()
@@ -28,10 +28,6 @@ class TPx:
     dp.DPxUpdateRegCache()
     dp.DPxClose()
     return pd.DataFrame(data, columns=columns)
-  def shut_down(self):
-    pass
-  def calibrate(self, skipCameraSetup=False):
-    TPxSimpleCalibration(skipCameraSetup)
 
 # Chamois ReadingTrial but with TRACKPixx3 recording:
 
@@ -43,7 +39,6 @@ class TPxReadingTrial(ReadingTrial):
     super().prelude(window)
     self.tpx.start_recording()
   def deactivate(self):
-    global session_id
     self.tpx.stop_recording()
     super().deactivate()
     data_frame = self.tpx.retrieve_data()
