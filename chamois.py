@@ -2,7 +2,7 @@
 from PySimpleGUI import *
 theme('Default1')
 
-import time, random, re, math, uuid, os, sys
+import time, random, re, math, uuid, os, sys, re
 from collections import Counter
 
 font = "Courier"
@@ -76,7 +76,10 @@ class CenteredInstructions(Instructions):
               [Text("Press space bar to continue.", pad=50)],
               [VPush()]]
     super().__init__(layout, element_justification="center")
+    instructions = re.sub('[\n\r\t ]+', ' ', instructions)
     self.stimulus = instructions
+    if len(instructions) > 40:
+      self.stimulus = instructions[:40] + ' …'
 
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
