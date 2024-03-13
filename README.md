@@ -7,7 +7,7 @@ Chamois is a Python application that aims to make eye-tracking experiments on re
 - Chamois is inspired by Ibex: Configuration and data format are similar but simpler.
 - Aims to implement all the usual best-practices, so that users don’t have to reinvent the wheel.
 - Support for Latin square designs.  Just drop your sentences and you’re good to go.
-- Chamois is eye-tracker agnostic and can be combined with almost any eye-tracking system via [PyGaze](https://www.pygaze.org/).  Using manufacturer APIs such as pylink and pypixx is of course also possible.
+- Chamois is eye-tracker agnostic and can be combined with almost any eye-tracking system via [PyGaze](https://www.pygaze.org/).  Manufacturer APIs such as pylink and pypixx can also be used.
 - Runs on Linux, MacOS, and Windows.  Only dependency is [PySimpleGui](https://www.pysimplegui.org).
 - With only around 300 lines of code, Chamois is easy to hack and extend even for users with only basic Python knowledge.
 
@@ -39,7 +39,7 @@ fillers = [
 # Select most underrepresented Latin square list:
 stimuli = next_latin_square_list(target_sentences)
 
-# Mix and shuffle :
+# Mix with fillers and shuffle :
 stimuli += fillers
 random.shuffle(stimuli)
 ```
