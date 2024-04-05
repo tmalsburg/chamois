@@ -157,7 +157,8 @@ class ReadingTrial(ExperimentalTrial):
     char_width = (first_word_width - 4) / first_word_length
     last_word_end = first_word_start + char_width * len(''.join(self.stimulus.split())) + 4 * len(self.words) + wordspacing * (len(self.words)-1)
     if (window_width < last_word_end):
-      raise RuntimeError("Text extends beyond window boundaries.")
+      time.sleep(1)
+      raise RuntimeError("Text extends beyond window boundaries: " + self.stimulus)
     self.metadata1 = ";".join(self.aois)
     super().prelude(window)
   def handle_event(self, window):
