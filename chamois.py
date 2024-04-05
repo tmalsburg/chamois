@@ -243,7 +243,8 @@ def run_experiment(pages):
   # Save data:
   filename = f"{session_id}_log.tsv"
   with open(filename, "w") as f:
-    f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2", "\n"]))
+    f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2"]))
+    f.write('\n')
     for t in [p.get_data() for p in pages]:
       t = tuple(str(v) if v!=None else '' for v in t)
       f.write("\t".join(t))
