@@ -81,6 +81,18 @@ class CenteredInstructions(Instructions):
     if len(instructions) > 40:
       self.stimulus = instructions[:40] + ' …'
 
+class ConsentForm(Instructions):
+  def __init__(self, text, **kwargs):
+    layout = [[VPush()],
+              [Text(text, pad=50)],
+              [Text("Press space bar to consent.", pad=50)],
+              [VPush()]]
+    super().__init__(layout, element_justification="center")
+    text = re.sub('[\n\r\t ]+', ' ', text)
+    self.stimulus = text
+    if len(text) > 40:
+      self.stimulus = text[:40] + ' …'
+
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
   def prelude(self, window):
