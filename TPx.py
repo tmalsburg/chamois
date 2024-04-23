@@ -230,12 +230,11 @@ def TPxSimpleCalibration(skipCameraSetup=False):
             keys = list(events.keys())
             if 'escape' in keys:
                 dp.TPxClearDeviceCalibration()
-                break
+                escape(windowPtr,io)
+                return TPxSimpleCalibration(True)
             elif 'return' in keys:
-                break
-
-    escape(windowPtr,io)
-    return calibrationSuccess
+                escape(windowPtr,io)
+                return calibrationSuccess
 
 ###############################################################################
 ############################### HELPER FUNCTIONS ##############################
