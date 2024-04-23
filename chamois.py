@@ -81,6 +81,13 @@ class CenteredInstructions(Instructions):
     if len(instructions) > 40:
       self.stimulus = instructions[:40] + ' …'
 
+class Next(Instructions):
+  def __init__(self, **kwargs):
+    layout = [[VPush()],
+              [Text("Press space bar to continue.")],
+              [VPush()]]
+    super().__init__(layout, element_justification="center")
+
 class ConsentForm(Instructions):
   def __init__(self, text, **kwargs):
     layout = [[VPush()],
@@ -260,6 +267,8 @@ def run_experiment(pages):
     f.write('\n')
     for t in [p.get_data() for p in pages]:
       t = tuple(str(v) if v!=None else '' for v in t)
+      if t[0]=="Next":
+        continue
       f.write("\t".join(t))
       f.write("\n")
   # Update our on-disk memory of completed lists:
