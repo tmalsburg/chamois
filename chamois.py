@@ -112,7 +112,7 @@ class ExperimentalTrial(Page):
 # TODO Specify size in visual field degrees (adapts to screen size,
 # distance, ...).
 class FixationCross(Graph):
-  def __init__(self, width=38, height=38, radius1=17, radius2=4, blinks=3):
+  def __init__(self, width=38, height=38, radius1=17, radius2=4):
     self.width   = width
     self.height  = height
     self.radius1 = radius1
@@ -139,6 +139,14 @@ class FixationCross(Graph):
     self.draw_oval((r2, r2), (-r2, -r2),
                    line_color="red",
                    fill_color="red")
+  def blink(self, window):
+    t = 200
+    while t > 10:
+      self.draw()
+      window.read(timeout=30+t)
+      self.erase()
+      window.read(timeout=30+t/2)
+      t *= 0.55
 
 class ReadingTrial(ExperimentalTrial):
   def __init__(self, item, condition, text):
@@ -152,13 +160,9 @@ class ReadingTrial(ExperimentalTrial):
     self.condition = condition
     self.stimulus  = text
   def prelude(self, window):
-    t = 200
-    while t > 10:
-      self.fixation_cross.draw()
-      window.read(timeout=30+t)
-      self.fixation_cross.erase()
-      window.read(timeout=30+t/2)
-      t *= 0.55
+    # Blink fixation cross:
+    self.fixation_cross.blink(window)
+    # Show words:
     for w in self.words:
       w.update(visible=True)
     window.refresh()
