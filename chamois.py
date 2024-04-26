@@ -103,7 +103,7 @@ class ConsentForm(Instructions):
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
   def prelude(self, window):
-    self.screenshot = "%s_%s_%03d_%s.png" % (session_id, self.type, self.item, self.condition)
+    self.screenshot = "data/%s_%s_%03d_%s.png" % (session_id, self.type, self.item, self.condition)
     try:
       window.save_window_screenshot_to_disk(self.screenshot)
     except:
@@ -244,6 +244,9 @@ class SubjectIDPage(Page):
 def run_experiment(pages):
   global window, session_id, exp_starttime
   session_id = uuid.uuid4()
+  # Create data subdirectory if necessary:
+  if not os.path.exists("data"):
+      os.makedirs("data")
   # Set up window:
   layout = [[p.column for p in pages if isinstance(p, Page)]]
   wrapper_layout = [[ProgressBar(len(layout[0])-1, orientation='h', expand_x=True, size=(20, 20), key='-PBAR-')],
@@ -262,7 +265,7 @@ def run_experiment(pages):
   window.close()
   # Save data:
   filename = f"{session_id}_log.tsv"
-  with open(filename, "w") as f:
+  with open("data/" + filename, "w") as f:
     f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2"]))
     f.write('\n')
     for t in [p.get_data() for p in pages]:

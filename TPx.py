@@ -42,7 +42,7 @@ class TPxReadingTrial(ReadingTrial):
     self.tpx.stop_recording()
     super().deactivate()
     data_frame = self.tpx.retrieve_data()
-    filename = "%s_%s_%03d_%s.csv" % (session_id, self.type, self.item, self.condition)
+    filename = "data/%s_%s_%03d_%s.csv" % (session_id, self.type, self.item, self.condition)
     data_frame.to_csv(filename, index=False)
     self.metadata2 = filename
 
