@@ -5,7 +5,8 @@ import pandas as pd
 
 class TPx:
   def calibrate(self, skipCameraSetup=False):
-    TPxSimpleCalibration(skipCameraSetup)
+    while not TPxSimpleCalibration(skipCameraSetup):
+      continue
   def start_recording(self):
     dp.DPxOpen()
     dp.DPxSetTPxAwake()
@@ -46,8 +47,8 @@ class TPxReadingTrial(ReadingTrial):
     data_frame.to_csv(filename, index=False)
     self.metadata2 = filename
 
-# Message shares an interface with Page but is not itself a page since
-# it is not part of the GUI.
+# Shares an interface with Page but is not itself a page since
+# it is not itself part of the GUI.
 class TPxCalibration():
   def __init__(self, tpx):
     self.type      = type(self).__name__
@@ -231,10 +232,12 @@ def TPxSimpleCalibration(skipCameraSetup=False):
             if 'escape' in keys:
                 dp.TPxClearDeviceCalibration()
                 escape(windowPtr,io)
-                return TPxSimpleCalibration(True)
+                return False
             elif 'return' in keys:
-                escape(windowPtr,io)
-                return calibrationSuccess
+                break
+
+    escape(windowPtr,io)
+    return calibrationSuccess
 
 ###############################################################################
 ############################### HELPER FUNCTIONS ##############################
