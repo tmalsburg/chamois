@@ -151,10 +151,12 @@ class FixationCross(Graph):
 class ReadingTrial(ExperimentalTrial):
   def __init__(self, item, condition, text):
     self.fixation_cross = fc = FixationCross()
+    self.fixation_cross2 = fc2 = FixationCross()
     self.words = [Text(w, pad=int(wordspacing/2), visible=False) for w in s.split()]
     layout = [[VPush()],
               [fc] + self.words,
-              [VPush()]]
+              [VPush()],
+              [Push(), fc2]]
     super().__init__(layout, vertical_alignment="center")
     self.item      = item
     self.condition = condition
@@ -165,6 +167,7 @@ class ReadingTrial(ExperimentalTrial):
     # Show words:
     for w in self.words:
       w.update(visible=True)
+    self.fixation_cross2.draw()
     window.refresh()
     # Calculate AOIs:
     self.aois = []
