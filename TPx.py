@@ -33,9 +33,10 @@ class TPx:
 # Chamois ReadingTrial but with TRACKPixx3 recording:
 
 class TPxReadingTrial(ReadingTrial):
-  def __init__(self, item, condition, s, tpx):
+  def __init__(self, item, condition, s, tpx, trigger_radius=200):
     super().__init__(item, condition, s)
     self.tpx = tpx
+    self.trigger_radius = trigger_radius
   def prelude(self, window):
     super().prelude(window)
     self.tpx.start_recording()
@@ -46,6 +47,21 @@ class TPxReadingTrial(ReadingTrial):
     filename = "data/%s_%s_%03d_%s.csv" % (session_id, self.type, self.item, self.condition)
     data_frame.to_csv(filename, index=False)
     self.metadata2 = filename
+  def handle_event(self, window):
+    # If we start sampling gaze too early there's no data yet:
+    time.sleep(0.05)
+    w, h = window.size
+    while True:
+      dp.DPxUpdateRegCache()
+      eyeData = dp.TPxGetEyePosition()
+      lx, ly, rx, ry = eyeData[0:4]
+      # TP3 uses center as origin:
+      x = (lx+rx)/2 + w/2
+      y = (ly+ry)/2 + h/2
+      if math.sqrt((x-w)**2 + y**2) < self.trigger_radius:
+        break
+    dp.DPxUpdateRegCache()
+    self.deactivate()
 
 # Shares an interface with Page but is not itself a page since
 # it is not itself part of the GUI.
