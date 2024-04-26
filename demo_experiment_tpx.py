@@ -49,9 +49,6 @@ tpx = TPx()
 # An experiment consists of a series of pages:
 pages = []
 
-# A message stored in the results file along with a time stamp:
-pages.append(Message("Start of session"))
-
 # Welcome screen:
 pages.append(
   CenteredInstructions("Welcome to this study!"))
@@ -59,7 +56,7 @@ pages.append(
 # Calibration:
 pages.append(
   CenteredInstructions("Before we start, we calibrate the eye-tracker."))
-pages.append(tpx.calibrate())
+pages.append(TPxCalibration(tpx))
 
 # Asks user to enter subject ID:
 pages.append(SubjectIDPage())
@@ -84,9 +81,6 @@ for i,c,s,q in stimuli:
 # Thank you screen:
 pages.append(
   CenteredInstructions("Thank you for your participation!"))
-
-# Another message with a time stamp:
-pages.append(Message("End of session"))
 
 # Run experiment:
 run_experiment(pages)
