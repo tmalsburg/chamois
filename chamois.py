@@ -2,7 +2,7 @@
 from PySimpleGUI import *
 theme('Default1')
 
-import time, random, re, math, uuid, os, sys, re
+import time, random, re, math, uuid, os, sys, re, csv
 from collections import Counter
 
 font = "Courier"
@@ -329,3 +329,18 @@ def next_latin_square_list(target_sentences):
   next_list_label = next_latin_square_list_label(target_sentences)
   print(f'Next Latin square list: {next_list_label}')
   return latin_square_lists(target_sentences)[next_list_label]
+
+def load_stimuli(filename):
+  stimuli = []
+  with open(filename, 'r') as file:
+    tsv_reader = csv.reader(file, delimiter='\t')
+    for row in tsv_reader:
+      assert len(row)==4
+      assert len(row[1])>0
+      assert len(row[2])>0
+      assert len(row[3])>0
+      row = (int(row[0]), row[1], row[2], row[3])
+      stimuli.append(row)
+  return stimuli
+
+# def test_char_width(text):
