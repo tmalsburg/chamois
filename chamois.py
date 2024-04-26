@@ -103,9 +103,15 @@ class ConsentForm(Instructions):
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
   def prelude(self, window):
+    super().prelude(window)
     self.screenshot = "data/%s_%s_%03d_%s.png" % (session_id, self.type, self.item, self.condition)
     try:
+      # Fails on wayland:
       window.save_window_screenshot_to_disk(self.screenshot)
+      # Scrot also doesn't work on wayland.  But on X scrot may be
+      # more accurate.  The PySimpleGUI method (PIL) sometimes adds a
+      # spurious margin.
+      # subprocess.run(["scrot", self.screenshot])
     except:
       sys.stderr.write(f"Warning: Screenshot failed: {self.screenshot}\n")
 
