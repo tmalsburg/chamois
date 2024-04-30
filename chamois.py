@@ -295,18 +295,20 @@ def run_experiment(pages):
 def check_latin_square(target_sentences):
   # Checks that all items have the same number of sentence:
   if len(set(Counter([x[0] for x in target_sentences]).values())) > 1:
-    RuntimeError("All items need to have the same number of sentences.")
+    raise RuntimeError("All items need to have the same number of sentences.")
   # Checks that all items have the same conditions:
   d = dict()
   for k,v in [(x[0], x[1]) for x in target_sentences]:
     d.setdefault(k, []).append(v)
   items = list(d.keys())
   if len(set([tuple(l) for l in d.values()])) != 1:
-    RuntimeError("Latin square design looks unbalanced.")
-  # Checks that each condition is present only once:
+    raise RuntimeError("Latin square design looks unbalanced.")
+  # Checks that each condition is present only once: (Yes, it's enough
+  # to check one item, because we've already established that all items
+  # have the same number of sentences and the same conditions.)
   item, conditions = d.popitem()
   if len(set(conditions)) < len(conditions):
-    RuntimeError("At least one condition appears multiple times per item.")
+    raise RuntimeError("At least one condition appears multiple times per item.")
   return items, conditions
 
 def latin_square_lists(target_sentences):
