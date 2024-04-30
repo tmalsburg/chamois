@@ -13,6 +13,8 @@ Chamois is a Python application that aims to make eye-tracking experiments on re
 - Runs on Linux, MacOS, and Windows.  Only dependency is [PySimpleGui](https://www.pysimplegui.org).
 - With less than 400 lines of code, Chamois is easy to hack and extend even for users with only basic Python knowledge.
 
+Chamois was not specifically designed for timing-sensitive experiments, e.g. those using the boundary paradigm.  Eye-movement contingent display-changes could be implemented but may be too slow.
+
 # Demo experiment
 
 Below is the code for a very simple experiment with 3 items, 2 conditions, 2 fillers, but no practice sentences.
