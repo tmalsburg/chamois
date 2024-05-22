@@ -2,7 +2,7 @@
 from PySimpleGUI import *
 theme('Default1')
 
-import time, random, re, math, uuid, os, sys, re, csv
+import time, random, re, math, uuid, os, sys, re, csv, subprocess
 from collections import Counter
 
 font = "Courier"
@@ -102,18 +102,18 @@ class ConsentForm(Instructions):
 
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
-  def prelude(self, window):
-    super().prelude(window)
+  def deactivate(self):
     self.screenshot = "data/%s_%s_%03d_%s.png" % (session_id, self.type, self.item, self.condition)
     try:
-      # Fails on wayland:
-      window.save_window_screenshot_to_disk(self.screenshot)
-      # Scrot also doesn't work on wayland.  But on X scrot may be
-      # more accurate.  The PySimpleGUI method (PIL) sometimes adds a
-      # spurious margin.
-      # subprocess.run(["scrot", self.screenshot])
+      # Fails on wayland and is not accurate (some pixels horizontally
+      # offset):
+      # window.save_window_screenshot_to_disk(self.screenshot)
+
+      # Scrot also doesn't work on wayland but it's accurate:
+      subprocess.run(["scrot", self.screenshot])
     except:
       sys.stderr.write(f"Warning: Screenshot failed: {self.screenshot}\n")
+    super().deactivate()
 
 # TODO Specify size in visual field degrees (adapts to screen size,
 # distance, ...).
@@ -174,7 +174,6 @@ class ReadingTrial(ExperimentalTrial):
     for w in self.words:
       w.update(visible=True)
     self.fixation_cross2.draw()
-    window.refresh()
     # Calculate AOIs:
     self.aois = []
     for i,word in enumerate(self.words):
