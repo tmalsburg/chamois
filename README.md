@@ -1,7 +1,7 @@
 
 Chamois is a Python application that aims to make eye-tracking experiments on reading behavior as easy as possible.  The focus is on stimulus presentation and recording of user responses.  Chamois doesn’t support any particular eye-tracker out of the box.  But it is relatively easy to make it work with any eye-tracker that has a Python API.  A simple demo experiment for TRACKPixx3 trackers is linked below.  Via PyGaze most other eye-tracker could be used as well.
 
-**Current status:** I wrote Chamois for my own lab and share it without any warranty.  It seems to work pretty well, but definitely still has some rough edges.
+**Current status:** Chamois is work in progress.  I wrote it for my own lab and share it without any warranty.  It seems to work pretty well, but definitely has some rough edges.  If you’re interested in using it, feel free to contact me first to discuss it.
 
 **Key features:**
 - Chamois is inspired by Ibex: Configuration and data format are similar but much simpler.
@@ -103,24 +103,24 @@ run_experiment(pages)
 
 ![Screenshot 6](images/screenshot_6.png)
 
-## Output
+## Session log
 
-Output comes in tab-separated values format (`.tsv`) and includes the AOIs of the individual words.  Screenshots of the stimuli are stored on disk.  All filenames belonging to a session start with the session ID.
+The log of the session comes in tab-separated values format (`.tsv`) and, among other things, includes the AOIs of the individual words.  Screenshots of the stimuli are stored on disk.  All filenames belonging to a session start with the session ID which is composed of the date and time at which the experiment was started, e.g. `20240912_082813`.
 
 Results in table format:
 
-| type                 | starttime | endtime | item | condition | stimulus                                                                                  | response  | screenshot                                                          | metadata1                                                       | metadata2 |
-|----------------------|-----------|---------|------|-----------|-------------------------------------------------------------------------------------------|-----------|---------------------------------------------------------------------|-----------------------------------------------------------------|-----------|
-| CenteredInstructions | 0.000     | 14.055  |      |           | Welcome to this study!                                                                    |           |                                                                     |                                                                 |           |
-| SubjectIDPage        | 14.070    | 18.509  |      |           |                                                                                           | subject01 |                                                                     |                                                                 |           |
-| ReadingTrial         | 40.271    | 43.455  | 1    | b         | While Bill hunted the deer that was brown and nimble was hunted by Bill.                  |           | `1579e43f-2b0d-4370-9169-057397713067_ReadingTrial_001_b.png`       | 77,704,221,761;239,704,355,761;373,704,545,761;563,704,651,761; |           |
-| YesNoQuestionTrial   | 43.470    | 48.545  | 1    | b         | Did Bill hunt the deer?                                                                   | no        | `1579e43f-2b0d-4370-9169-057397713067_YesNoQuestionTrial_001_b.png` |                                                                 |           |
-| ReadingTrial         | 48.560    | 52.726  | 21   | filler    | No head injury is too trivial to be ignored.                                              |           | `1579e43f-2b0d-4370-9169-057397713067_ReadingTrial_021_filler.png`  | 77,704,137,761;155,704,271,761;289,704,461,761;479,704,539,761; |           |
-| ReadingTrial         | 53.390    | 55.383  | 3    | b         | Anna studied with the chef of the aristocrats who was routinely letting food go to waste. |           | `1579e43f-2b0d-4370-9169-057397713067_ReadingTrial_003_b.png`       | 77,704,193,761;211,704,411,761;429,704,545,761;563,704,651,761; |           |
-| YesNoQuestionTrial   | 55.396    | 56.436  | 3    | b         | Did food go to waste?                                                                     | no        | `1579e43f-2b0d-4370-9169-057397713067_YesNoQuestionTrial_003_b.png` |                                                                 |           |
-| ReadingTrial         | 56.451    | 58.252  | 20   | filler    | Colorless green ideas sleep furiously.                                                    |           | `1579e43f-2b0d-4370-9169-057397713067_ReadingTrial_020_filler.png`  | 77,704,333,761;351,704,495,761;513,704,657,761;675,704,819,761; |           |
-| ReadingTrial         | 59.073    | 60.640  | 2    | a         | While Mary bathed the baby bathed Mary.                                                   |           | `1579e43f-2b0d-4370-9169-057397713067_ReadingTrial_002_a.png`       | 77,704,221,761;239,704,355,761;373,704,545,761;563,704,651,761; |           |
-| CenteredInstructions | 60.655    | 66.013  |      |           | Thank you for your participation!                                                         |           |                                                                     |                                                                 |           |
+| type                 | starttime | endtime | item | condition | stimulus                                                                                  | response  | screenshot                                     | metadata1                                                       | metadata2 |
+|----------------------|-----------|---------|------|-----------|-------------------------------------------------------------------------------------------|-----------|------------------------------------------------|-----------------------------------------------------------------|-----------|
+| CenteredInstructions | 0.000     | 14.055  |      |           | Welcome to this study!                                                                    |           |                                                |                                                                 |           |
+| SubjectIDPage        | 14.070    | 18.509  |      |           |                                                                                           | subject01 |                                                |                                                                 |           |
+| ReadingTrial         | 40.271    | 43.455  | 1    | b         | While Bill hunted the deer that was brown and nimble was hunted by Bill.                  |           | `20240912_082813_ReadingTrial_001_b.png`       | 77,704,221,761;239,704,355,761;373,704,545,761;563,704,651,761; |           |
+| YesNoQuestionTrial   | 43.470    | 48.545  | 1    | b         | Did Bill hunt the deer?                                                                   | no        | `20240912_082813_YesNoQuestionTrial_001_b.png` |                                                                 |           |
+| ReadingTrial         | 48.560    | 52.726  | 21   | filler    | No head injury is too trivial to be ignored.                                              |           | `20240912_082813_ReadingTrial_021_filler.png`  | 77,704,137,761;155,704,271,761;289,704,461,761;479,704,539,761; |           |
+| ReadingTrial         | 53.390    | 55.383  | 3    | b         | Anna studied with the chef of the aristocrats who was routinely letting food go to waste. |           | `20240912_082813_ReadingTrial_003_b.png`       | 77,704,193,761;211,704,411,761;429,704,545,761;563,704,651,761; |           |
+| YesNoQuestionTrial   | 55.396    | 56.436  | 3    | b         | Did food go to waste?                                                                     | no        | `20240912_082813_YesNoQuestionTrial_003_b.png` |                                                                 |           |
+| ReadingTrial         | 56.451    | 58.252  | 20   | filler    | Colorless green ideas sleep furiously.                                                    |           | `20240912_082813_ReadingTrial_020_filler.png`  | 77,704,333,761;351,704,495,761;513,704,657,761;675,704,819,761; |           |
+| ReadingTrial         | 59.073    | 60.640  | 2    | a         | While Mary bathed the baby bathed Mary.                                                   |           | `20240912_082813_ReadingTrial_002_a.png`       | 77,704,221,761;239,704,355,761;373,704,545,761;563,704,651,761; |           |
+| CenteredInstructions | 60.655    | 66.013  |      |           | Thank you for your participation!                                                         |           |                                                |                                                                 |           |
 
 Note that each column contains only one type of data.  This makes it easy to work with this format: just `read.csv` the results file in R and you’re ready to go.
 
@@ -137,4 +137,4 @@ Columns:
 9. `metadata1`: Meta data depending on page type.  For ReadingTrials, this column contains the screen coordinates of the AOIs.
 10. `metadata2`: More meta data depending on page type.  For TPxReadingTrials, this column contains the file name of the recorded eye-tracking data.
 
-The data format of the eye-tracking data depends on the eye-tracker and the user will have to take care of combining Chamois log data (above) with the eye-tracking data.  In many cases this will boil down to simply joining two data frames.  Support for TRACKPixx3 eye-trackers is included in this repository (see [demo_experiment_tpx.py](https://github.com/tmalsburg/chamois/blob/main/demo_experiment_tpx.py)).
+The data format of the eye-tracking data depends on the eye-tracker and the user will have to take care of combining Chamois data from the session log (above) with the eye-tracking data.  Initial support for TRACKPixx3 eye-trackers is included in this repository (see [demo_experiment_tpx.py](https://github.com/tmalsburg/chamois/blob/main/demo_experiment_tpx.py)).
