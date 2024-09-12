@@ -49,7 +49,7 @@ class Page:
     self.completed = True
   def get_data(self):
     if not self.completed:
-      raise RuntimeError()
+      raise RuntimeError("Trying to retrieve results from a page that hasn't completed.")
     return (self.type, f"{self.starttime:.3f}", f"{self.endtime:.3f}", self.item, self.condition, self.stimulus, self.response, self.screenshot, self.metadata1, self.metadata2)
 
 # Message shares an interface with Page but is not itself a page since
@@ -260,23 +260,44 @@ def run_experiment(pages):
   # Create data subdirectory if necessary:
   if not os.path.exists("data"):
       os.makedirs("data")
-  # Set up window:
-  layout = [[p.column for p in pages if isinstance(p, Page)]]
-  wrapper_layout = [[ProgressBar(len(layout[0])-1, orientation='h', expand_x=True, size=(20, 20), key='-PBAR-')],
-                    [Column(layout, expand_x=True, expand_y=True)]]
-  window = Window('Experiment', wrapper_layout, keep_on_top=False, resizable=True, font=f"{font} {fontsize}", return_keyboard_events=True).Finalize()
-  window.Maximize()
-  window.TKroot["cursor"] = "none"
-  # Run experiment:
-  exp_starttime = time.time()
-  i = 0
-  for p in pages:
-    p.activate(window)
-    if isinstance(p, Page):
-      window['-PBAR-'].update(current_count=i+1)
-      i += 1
-  window.close()
-  # Save data:
+  try:
+    # Set up window:
+    layout = [[p.column for p in pages if isinstance(p, Page)]]
+    wrapper_layout = [[ProgressBar(len(layout[0])-1, orientation='h', expand_x=True, size=(20, 20), key='-PBAR-')],
+                      [Column(layout, expand_x=True, expand_y=True)]]
+    window = Window('Experiment', wrapper_layout, keep_on_top=False, resizable=True, font=f"{font} {fontsize}", return_keyboard_events=True).Finalize()
+    window.Maximize()
+    window.TKroot["cursor"] = "none"
+    # Run experiment:
+    exp_starttime = time.time()
+    i = 0
+    for p in pages:
+      p.activate(window)
+      if isinstance(p, Page):
+        window['-PBAR-'].update(current_count=i+1)
+        i += 1
+    window.close()
+  except Exception as e:
+    print("An exception occurred.  Trying to save session log so far ... ", file=sys.stderr, end='')
+    # Save data (emergency):
+    filename = f"{session_id}_log.tsv"
+    with open("data/" + filename, "w") as f:
+      f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2"]))
+      f.write('\n')
+      for p in pages:
+        if not p.completed:
+          break
+        t = tuple(str(v) if v!=None else '' for v in p.get_data())
+        if t[0]=="Next":
+          continue
+        f.write("\t".join(t))
+        f.write("\n")
+    print("completed.", file=sys.stderr)
+    print("Data stored in: " + filename, file=sys.stderr)
+    # Raise exception again to complete.
+    raise e
+
+  # Save data (normal):
   filename = f"{session_id}_log.tsv"
   with open("data/" + filename, "w") as f:
     f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2"]))
@@ -287,6 +308,7 @@ def run_experiment(pages):
         continue
       f.write("\t".join(t))
       f.write("\n")
+
   # Update our on-disk memory of completed lists:
   with open('tested_latin_square_lists.txt', 'a') as file:
     file.write(f'{latin_square_list_label}\n')
