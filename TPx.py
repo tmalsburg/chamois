@@ -71,14 +71,14 @@ class TPxCalibration():
     self.tpx       = tpx
     self.starttime = None
   def activate(self, _):
-    self.starttime = time.time()
+    self.starttime = round(time.time() - exp_starttime, 3)
     self.tpx.calibrate()
   def get_data(self):
     return (self.type, self.starttime, None, None, None, None, None, None, None, None)
 
 class TPxQuickCalibration(TPxCalibration):
   def activate(self, _):
-    self.starttime = time.time()
+    self.starttime = round(time.time() - exp_starttime, 3)
     self.tpx.calibrate(True)
 
 #
