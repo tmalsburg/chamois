@@ -2,8 +2,9 @@
 from FreeSimpleGUI import *
 theme('Default1')
 
-import time, random, re, math, uuid, os, sys, re, csv, subprocess
+import time, random, re, math, os, sys, re, csv, subprocess
 from collections import Counter
+from datetime import datetime
 
 font = "Courier"
 fontsize = 22
@@ -255,7 +256,7 @@ class SubjectIDPage(Page):
 
 def run_experiment(pages):
   global window, session_id, exp_starttime
-  session_id = uuid.uuid4()
+  session_id = datetime.today().strftime('%Y%m%d_%H%M%S')
   # Create data subdirectory if necessary:
   if not os.path.exists("data"):
       os.makedirs("data")
