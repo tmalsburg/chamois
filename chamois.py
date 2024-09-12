@@ -104,14 +104,14 @@ class ConsentForm(Instructions):
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
   def deactivate(self):
-    self.screenshot = "data/%s_%s_%03d_%s.png" % (session_id, self.type, self.item, self.condition)
+    self.screenshot = "%s_%s_%03d_%s.png" % (session_id, self.type, self.item, self.condition)
     try:
       # Fails on wayland and is not accurate (some pixels horizontally
       # offset):
       # window.save_window_screenshot_to_disk(self.screenshot)
 
       # Scrot also doesn't work on wayland but it's accurate:
-      subprocess.run(["scrot", self.screenshot])
+      subprocess.run(["scrot", "data/" + self.screenshot])
     except:
       sys.stderr.write(f"Warning: Screenshot failed: {self.screenshot}\n")
     super().deactivate()
