@@ -10,6 +10,9 @@ font = "Courier"
 fontsize = 22
 wordspacing = 18
 
+class ExperimentAbortException(Exception):
+  pass
+
 class Page:
   def __init__(self, layout, **kwargs):
     self.layout     = layout
@@ -40,7 +43,9 @@ class Page:
   def handle_event(self, window):
     while True:
       self.event, self.values = window.read()
-      if self.event.startswith('space:') or self.event == WIN_CLOSED:
+      if self.event == WIN_CLOSED:
+        raise ExperimentAbortException()
+      if self.event.startswith('space:'):
         break
     self.deactivate()
   def deactivate(self):
@@ -196,7 +201,9 @@ class ReadingTrial(ExperimentalTrial):
   def handle_event(self, window):
     while True:
       self.event, self.values = window.read()
-      if self.event.startswith('space:') or self.event == WIN_CLOSED:
+      if self.event == WIN_CLOSED:
+        raise ExperimentAbortException()
+      if self.event.startswith('space:'):
         break
     self.deactivate()
 
@@ -214,7 +221,9 @@ class YesNoQuestionTrial(ExperimentalTrial):
   def handle_event(self, window):
     while True:
       self.event, self.values = window.read()
-      if self.event.startswith("f:") or self.event.startswith("j:") or self.event == WIN_CLOSED:
+      if self.event == WIN_CLOSED:
+        raise ExperimentAbortException()
+      if self.event.startswith("f:") or self.event.startswith("j:"):
         break
     self.deactivate()
     if self.event.startswith("f:"):
@@ -249,7 +258,9 @@ class SubjectIDPage(Page):
   def handle_event(self, window):
     while True:
       self.event, self.values = window.read()
-      if self.event.startswith("Return:") or self.event == WIN_CLOSED:
+      if self.event == WIN_CLOSED:
+        raise ExperimentAbortException()
+      if self.event.startswith("Return:"):
         break
     self.deactivate()
     self.response = self.values["-SUBJECTID-"]
@@ -278,7 +289,10 @@ def run_experiment(pages):
         i += 1
     window.close()
   except Exception as e:
-    print("An exception occurred.  Trying to save session log so far ... ", file=sys.stderr, end='')
+    if type(e) == ExperimentAbortException:
+      print("Experiment aborted.  Saving session log so far ... ", file=sys.stderr, end='')
+    else:
+      print("An error occurred.  Trying to save session log so far ... ", file=sys.stderr, end='')
     # Save data (emergency):
     filename = f"{session_id}_log.tsv"
     with open("data/" + filename, "w") as f:
@@ -295,7 +309,10 @@ def run_experiment(pages):
     print("completed.", file=sys.stderr)
     print("Data stored in: " + filename, file=sys.stderr)
     # Raise exception again to complete.
-    raise e
+    if type(e) != ExperimentAbortException:
+      raise e
+    else:
+      sys.exit(1)
 
   # Save data (normal):
   filename = f"{session_id}_log.tsv"
