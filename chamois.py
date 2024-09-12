@@ -9,6 +9,7 @@ from datetime import datetime
 font = "Courier"
 fontsize = 22
 wordspacing = 18
+latin_square_list_label = None
 
 class ExperimentAbortException(Exception):
   pass
@@ -332,9 +333,12 @@ def run_experiment(pages):
       f.write("\t".join(t))
       f.write("\n")
 
-  # Update our on-disk memory of completed lists:
-  with open('tested_latin_square_lists.txt', 'a') as file:
-    file.write(f'{latin_square_list_label}\n')
+  # If a Latin square was used, update our on-disk memory of completed
+  # lists:
+  if latin_square_list_label:
+    with open('tested_latin_square_lists.txt', 'a') as file:
+      file.write(f'{latin_square_list_label}\n')
+
   print(f"Experiment finished.\nSession ID: {session_id}")
 
 def check_latin_square(target_sentences):
