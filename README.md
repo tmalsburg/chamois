@@ -1,7 +1,7 @@
 
 Chamois is a Python application that aims to make eye-tracking experiments on reading behavior as easy as possible.  The focus is on stimulus presentation and recording of user responses.  Chamois doesn’t support any particular eye-tracker out of the box.  But it is relatively easy to make it work with any eye-tracker that has a Python API.  A simple demo experiment for TRACKPixx3 trackers is linked below.  Via PyGaze most other eye-tracker could be used as well.
 
-**Current status:** I wrote Chamois for my own lab and share it without any warranty.  It seems to work pretty well, but may still have some rough edges.
+**Current status:** I wrote Chamois for my own lab and share it without any warranty.  It seems to work pretty well, but definitely still has some rough edges.
 
 **Key features:**
 - Chamois is inspired by Ibex: Configuration and data format are similar but much simpler.
