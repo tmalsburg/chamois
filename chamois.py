@@ -180,13 +180,14 @@ class ReadingTrial(ExperimentalTrial):
     for w in self.words:
       w.update(visible=True)
     self.fixation_cross2.draw()
+    window.refresh()
     # Calculate AOIs:
     self.aois = []
     for i,word in enumerate(self.words):
       x, y = word.widget.winfo_rootx(), word.widget.winfo_rooty()
       w, h = word.get_size()
       self.aois.append(f'{x},{y},{x+w},{y+h}')
-    # Check whether text extends beyond screen:
+    # Check whether text extends beyond screen (no exact science):
     window_width, _ = window.size
     first_word_length = len(self.words[0].get())
     first_word_width = self.words[0].widget.winfo_width()
