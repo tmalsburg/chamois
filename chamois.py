@@ -20,6 +20,7 @@ class Page:
     self.event      = None
     self.values     = None
     self.completed  = False
+    self.pno        = None
     self.type       = type(self).__name__
     self.starttime  = None
     self.endtime    = None
@@ -31,8 +32,9 @@ class Page:
     self.metadata1  = None
     self.metadata2  = None
   # Activate the page as defined at creation.
-  def activate(self, window):
+  def activate(self, window, pno):
     self.column.update(visible=True)
+    self.pno = pno
     self.starttime = round(time.time() - exp_starttime, 3)
     self.prelude(window)
     self.handle_event(window)
@@ -55,20 +57,22 @@ class Page:
   def get_data(self):
     if not self.completed:
       raise RuntimeError("Trying to retrieve results from a page that hasn't completed.")
-    return (self.type, f"{self.starttime:.3f}", f"{self.endtime:.3f}", self.item, self.condition, self.stimulus, self.response, self.screenshot, self.metadata1, self.metadata2)
+    return (self.pno, self.type, f"{self.starttime:.3f}", f"{self.endtime:.3f}", self.item, self.condition, self.stimulus, self.response, self.screenshot, self.metadata1, self.metadata2)
 
 # Message shares an interface with Page but is not itself a page since
 # it is not part of the GUI.
 class Message:
   def __init__(self, message):
+    self.pno       = None
     self.type      = type(self).__name__
     self.metadata1 = message
     self.starttime = None
-  def activate(self, _):
+  def activate(self, _, pno):
+    self.pno = pno
     self.starttime = round(time.time() - exp_starttime, 3)
   def get_data(self):
     # TODO: Make sure to show 3 digits in start and endtime.
-    return (self.type, f"{self.starttime:.3f}", None, None, None, None, None, None, self.metadata1, None)
+    return (self.pno, self.type, f"{self.starttime:.3f}", None, None, None, None, None, None, self.metadata1, None)
 
 # Separate class to make a page show up in the results as
 # "Instructions".
@@ -109,7 +113,7 @@ class ConsentForm(Instructions):
 # Takes a screenshot before handling an event:
 class ExperimentalTrial(Page):
   def deactivate(self):
-    self.screenshot = "%s_%s_%03d_%s.png" % (session_id, self.type, self.item, self.condition)
+    self.screenshot = "%s_%03d_%s_%03d_%s.png" % (session_id, self.pno, self.type, self.item, self.condition)
     try:
       # Fails on wayland and is not accurate (some pixels horizontally
       # offset):
@@ -284,7 +288,7 @@ def run_experiment(pages):
     exp_starttime = time.time()
     i = 0
     for p in pages:
-      p.activate(window)
+      p.activate(window, i)
       if isinstance(p, Page):
         window['-PBAR-'].update(current_count=i+1)
         i += 1
@@ -294,10 +298,11 @@ def run_experiment(pages):
       print("Experiment aborted.  Saving session log so far ... ", file=sys.stderr, end='')
     else:
       print("An error occurred.  Trying to save session log so far ... ", file=sys.stderr, end='')
+
     # Save data (emergency):
     filename = f"{session_id}_log.tsv"
     with open("data/" + filename, "w") as f:
-      f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2"]))
+      f.write('\t'.join(["pno", "type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2"]))
       f.write('\n')
       for p in pages:
         if not p.completed:
@@ -318,7 +323,7 @@ def run_experiment(pages):
   # Save data (normal):
   filename = f"{session_id}_log.tsv"
   with open("data/" + filename, "w") as f:
-    f.write('\t'.join(["type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2"]))
+    f.write('\t'.join(["pno", "type", "starttime", "endtime", "item", "condition", "stimulus", "response", "screenshot", "metadata1", "metadata2"]))
     f.write('\n')
     for t in [p.get_data() for p in pages]:
       t = tuple(str(v) if v!=None else '' for v in t)

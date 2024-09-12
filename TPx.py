@@ -44,7 +44,7 @@ class TPxReadingTrial(ReadingTrial):
     self.tpx.stop_recording()
     super().deactivate()
     data_frame = self.tpx.retrieve_data()
-    filename = "data/%s_%s_%03d_%s.csv" % (session_id, self.type, self.item, self.condition)
+    filename = "data/%s_%03d_%s_%03d_%s.csv" % (session_id, self.pno, self.type, self.item, self.condition)
     data_frame.to_csv(filename, index=False)
     self.metadata2 = filename
   def handle_event(self, window):
@@ -67,17 +67,20 @@ class TPxReadingTrial(ReadingTrial):
 # it is not itself part of the GUI.
 class TPxCalibration():
   def __init__(self, tpx):
+    self.pno       = None
     self.type      = type(self).__name__
     self.tpx       = tpx
     self.starttime = None
-  def activate(self, _):
+  def activate(self, _, pno):
+    self.pno = pno
     self.starttime = round(time.time() - exp_starttime, 3)
     self.tpx.calibrate()
   def get_data(self):
-    return (self.type, self.starttime, None, None, None, None, None, None, None, None)
+    return (self.pno, self.type, self.starttime, None, None, None, None, None, None, None, None)
 
 class TPxQuickCalibration(TPxCalibration):
-  def activate(self, _):
+  def activate(self, _, pno):
+    self.pno = pno
     self.starttime = round(time.time() - exp_starttime, 3)
     self.tpx.calibrate(True)
 

@@ -109,32 +109,33 @@ The log of the session comes in tab-separated values format (`.tsv`) and, among 
 
 Results in table format:
 
-| type                 | starttime | endtime | item | condition | stimulus                                                                                  | response  | screenshot                                     | metadata1                                                       | metadata2 |
-|----------------------|-----------|---------|------|-----------|-------------------------------------------------------------------------------------------|-----------|------------------------------------------------|-----------------------------------------------------------------|-----------|
-| CenteredInstructions | 0.000     | 14.055  |      |           | Welcome to this study!                                                                    |           |                                                |                                                                 |           |
-| SubjectIDPage        | 14.070    | 18.509  |      |           |                                                                                           | subject01 |                                                |                                                                 |           |
-| ReadingTrial         | 40.271    | 43.455  | 1    | b         | While Bill hunted the deer that was brown and nimble was hunted by Bill.                  |           | `20240912_082813_ReadingTrial_001_b.png`       | 77,704,221,761;239,704,355,761;373,704,545,761;563,704,651,761; |           |
-| YesNoQuestionTrial   | 43.470    | 48.545  | 1    | b         | Did Bill hunt the deer?                                                                   | no        | `20240912_082813_YesNoQuestionTrial_001_b.png` |                                                                 |           |
-| ReadingTrial         | 48.560    | 52.726  | 21   | filler    | No head injury is too trivial to be ignored.                                              |           | `20240912_082813_ReadingTrial_021_filler.png`  | 77,704,137,761;155,704,271,761;289,704,461,761;479,704,539,761; |           |
-| ReadingTrial         | 53.390    | 55.383  | 3    | b         | Anna studied with the chef of the aristocrats who was routinely letting food go to waste. |           | `20240912_082813_ReadingTrial_003_b.png`       | 77,704,193,761;211,704,411,761;429,704,545,761;563,704,651,761; |           |
-| YesNoQuestionTrial   | 55.396    | 56.436  | 3    | b         | Did food go to waste?                                                                     | no        | `20240912_082813_YesNoQuestionTrial_003_b.png` |                                                                 |           |
-| ReadingTrial         | 56.451    | 58.252  | 20   | filler    | Colorless green ideas sleep furiously.                                                    |           | `20240912_082813_ReadingTrial_020_filler.png`  | 77,704,333,761;351,704,495,761;513,704,657,761;675,704,819,761; |           |
-| ReadingTrial         | 59.073    | 60.640  | 2    | a         | While Mary bathed the baby bathed Mary.                                                   |           | `20240912_082813_ReadingTrial_002_a.png`       | 77,704,221,761;239,704,355,761;373,704,545,761;563,704,651,761; |           |
-| CenteredInstructions | 60.655    | 66.013  |      |           | Thank you for your participation!                                                         |           |                                                |                                                                 |           |
+| pno | type                 | starttime | endtime | item | condition | stimulus                                                                                  | response  | screenshot                                     | metadata1                                                       | metadata2 |
+|-----| ---------------------|-----------|---------|------|-----------|-------------------------------------------------------------------------------------------|-----------|------------------------------------------------|-----------------------------------------------------------------|-----------|
+|   0 | CenteredInstructions | 0.000     | 14.055  |      |           | Welcome to this study!                                                                    |           |                                                |                                                                 |           |
+|   1 | SubjectIDPage        | 14.070    | 18.509  |      |           |                                                                                           | subject01 |                                                |                                                                 |           |
+|   2 | ReadingTrial         | 40.271    | 43.455  | 1    | b         | While Bill hunted the deer that was brown and nimble was hunted by Bill.                  |           | `20240912_082813_ReadingTrial_001_b.png`       | 77,704,221,761;239,704,355,761;373,704,545,761;563,704,651,761; |           |
+|   3 | YesNoQuestionTrial   | 43.470    | 48.545  | 1    | b         | Did Bill hunt the deer?                                                                   | no        | `20240912_082813_YesNoQuestionTrial_001_b.png` |                                                                 |           |
+|   4 | ReadingTrial         | 48.560    | 52.726  | 21   | filler    | No head injury is too trivial to be ignored.                                              |           | `20240912_082813_ReadingTrial_021_filler.png`  | 77,704,137,761;155,704,271,761;289,704,461,761;479,704,539,761; |           |
+|   5 | ReadingTrial         | 53.390    | 55.383  | 3    | b         | Anna studied with the chef of the aristocrats who was routinely letting food go to waste. |           | `20240912_082813_ReadingTrial_003_b.png`       | 77,704,193,761;211,704,411,761;429,704,545,761;563,704,651,761; |           |
+|   6 | YesNoQuestionTrial   | 55.396    | 56.436  | 3    | b         | Did food go to waste?                                                                     | no        | `20240912_082813_YesNoQuestionTrial_003_b.png` |                                                                 |           |
+|   7 | ReadingTrial         | 56.451    | 58.252  | 20   | filler    | Colorless green ideas sleep furiously.                                                    |           | `20240912_082813_ReadingTrial_020_filler.png`  | 77,704,333,761;351,704,495,761;513,704,657,761;675,704,819,761; |           |
+|   8 | ReadingTrial         | 59.073    | 60.640  | 2    | a         | While Mary bathed the baby bathed Mary.                                                   |           | `20240912_082813_ReadingTrial_002_a.png`       | 77,704,221,761;239,704,355,761;373,704,545,761;563,704,651,761; |           |
+|   9 | CenteredInstructions | 60.655    | 66.013  |      |           | Thank you for your participation!                                                         |           |                                                |                                                                 |           |
 
 Note that each column contains only one type of data.  This makes it easy to work with this format: just `read.csv` the results file in R and you’re ready to go.
 
 Columns:
 
-1. `type`: The type of page that was displayed (or “Message” which appears only in the results file, not on screen during the experiment).
-2. `starttime`: The time at which the page was displayed, in seconds with precision down to milliseconds.  The clock starts at the beginning of the experiment (`0.000`).
-3. `endtime`: The time at which the page was left.
-4. `item`: The item number of the displayed stimulus (if any).
-5. `condition`: The condition of the displayed stimulus (if any).
-6. `stimulus`: The displayed stimulus (if any).  Could also be the instructions that were displayed (potentially abbreviated).
-7. `response`: The response (if any).
-8. `screenshot`: Filename of screenshot of the page if a stimulus was displayed.
-9. `metadata1`: Meta data depending on page type.  For ReadingTrials, this column contains the screen coordinates of the AOIs.
-10. `metadata2`: More meta data depending on page type.  For TPxReadingTrials, this column contains the file name of the recorded eye-tracking data.
+1. `pno`: The number of the page in the sequence of all pages.
+2. `type`: The type of page that was displayed (or “Message” which appears only in the results file, not on screen during the experiment).
+3. `starttime`: The time at which the page was displayed, in seconds with precision down to milliseconds.  The clock starts at the beginning of the experiment (`0.000`).
+4. `endtime`: The time at which the page was left.
+5. `item`: The item number of the displayed stimulus (if any).
+6. `condition`: The condition of the displayed stimulus (if any).
+7. `stimulus`: The displayed stimulus (if any).  Could also be the instructions that were displayed (potentially abbreviated).
+8. `response`: The response (if any).
+9. `screenshot`: Filename of screenshot of the page if a stimulus was displayed.
+10. `metadata1`: Meta data depending on page type.  For ReadingTrials, this column contains the screen coordinates of the AOIs.
+11. `metadata2`: More meta data depending on page type.  For TPxReadingTrials, this column contains the file name of the recorded eye-tracking data.
 
 The data format of the eye-tracking data depends on the eye-tracker and the user will have to take care of combining Chamois data from the session log (above) with the eye-tracking data.  Initial support for TRACKPixx3 eye-trackers is included in this repository (see [demo_experiment_tpx.py](https://github.com/tmalsburg/chamois/blob/main/demo_experiment_tpx.py)).
