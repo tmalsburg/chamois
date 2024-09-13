@@ -68,6 +68,7 @@ pages.append(
 for i,c,s,q in practice_sentence:
   pages.append(TPxReadingTrial(i,c,s,tpx))
   pages.append(YesNoQuestionTrial(i,c,q))
+  pages.append(TPxNext(tpx))
 
 # Experimental trials:
 pages.append(
@@ -77,6 +78,7 @@ for i,c,s,q in stimuli:
   pages.append(TPxReadingTrial(i,c,s,tpx))
   if random.choice([True, False]):
     pages.append(YesNoQuestionTrial(i,c,q))
+  pages.append(TPxNext(tpx))
 
 # Thank you screen:
 pages.append(
