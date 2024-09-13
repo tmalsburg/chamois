@@ -60,6 +60,12 @@ class TPxReadingTrial(ReadingTrial):
       y = (ly+ry)/2 + h/2
       if math.sqrt((x-w)**2 + y**2) < self.trigger_radius:
         break
+      if self.event.startswith('space:'):
+        break
+      if self.event == WIN_CLOSED:
+        dp.DPxUpdateRegCache()
+        self.tpx.stop_recording()
+        raise ExperimentAbortException()
       if self.event.startswith('Escape:'):
         self.response = "ABORTED"
         break
