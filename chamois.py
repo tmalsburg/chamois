@@ -388,8 +388,6 @@ def latin_square_lists(target_sentences):
     offset += 1
   return dict(zip(conditions, lists))
 
-# TODO Warn if distribution of lists looks unbalanced (more
-# unbalanced than we would expect under H0: no bias).
 def next_latin_square_list_label(target_sentences):
   global latin_square_list_label
   filename = "tested_latin_square_lists.txt"
