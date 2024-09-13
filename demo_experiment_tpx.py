@@ -76,7 +76,7 @@ pages.append(
 for i,c,s,q in stimuli:
   pages.append(TPxReadingTrial(i,c,s,tpx))
   if random.choice([True, False]):
-    pages.append(YesNoQuestionTrial(i,c,q,tpx))
+    pages.append(YesNoQuestionTrial(i,c,q))
 
 # Thank you screen:
 pages.append(
