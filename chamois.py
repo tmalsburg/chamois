@@ -225,6 +225,7 @@ class ReadingTrial(ExperimentalTrial):
         break
       if self.event.startswith('Escape:'):
         self.response = "ABORTED"
+        print("  Page aborted.")
         break
     self.deactivate()
 
