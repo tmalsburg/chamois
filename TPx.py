@@ -97,7 +97,7 @@ class TPxNext(Next):
   def __init__(self, tpx):
     super().__init__()
     self.layout.append(
-      [Text("[r] key for eye-tracker recalibration", font=f"{font} {int(fontsize*0.7)}", text_color="grey79")]]
+      [Text("[r] key for eye-tracker recalibration", font=f"{font} {int(fontsize*0.7)}", text_color="grey79")])
     self.tpx = tpx
   def handle_event(self, window):
     while True:
