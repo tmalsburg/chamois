@@ -37,8 +37,6 @@ class Page:
     self.column.update(visible=True)
     self.pno = pno
     self.starttime = round(time.time() - exp_starttime, 3)
-    self.prelude(window)
-    self.handle_event(window)
     # Print message in terminal:
     stim_abbrev = self.stimulus or ""
     stim_abbrev = stim_abbrev.replace("\n", "")
@@ -50,6 +48,9 @@ class Page:
       print("%d, %s: %s" % (self.pno, self.type, stim_abbrev))
     else:
       print("%d, %s" % (self.pno, self.type))
+    # Let's go:
+    self.prelude(window)
+    self.handle_event(window)
   # Optional stage-setting that can only be performed once the page is
   # displayed:
   def prelude(self, window):
