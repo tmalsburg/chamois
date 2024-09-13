@@ -299,9 +299,9 @@ def run_experiment(pages):
     window.close()
   except Exception as e:
     if type(e) == ExperimentAbortException:
-      print("Experiment aborted.  Saving session log so far ... ", file=sys.stderr, end='')
+      print("Experiment aborted.")
     else:
-      print("An error occurred.  Trying to save session log so far ... ", file=sys.stderr, end='')
+      print("An error occurred.")
 
     # Save data (emergency):
     filename = f"{session_id}_log.tsv"
@@ -316,8 +316,7 @@ def run_experiment(pages):
           continue
         f.write("\t".join(t))
         f.write("\n")
-    print("completed.", file=sys.stderr)
-    print("Data stored in: " + filename, file=sys.stderr)
+    print("Session log stored in: data/" + filename)
     # Raise exception again to complete.
     if type(e) != ExperimentAbortException:
       raise e
@@ -342,7 +341,7 @@ def run_experiment(pages):
     with open('tested_latin_square_lists.txt', 'a') as file:
       file.write(f'{latin_square_list_label}\n')
 
-  print(f"Experiment finished.\nSession ID: {session_id}")
+  print(f"Experiment finished.\nSession log stored in: data/{filename}")
 
 def check_latin_square(target_sentences):
   # Checks that all items have the same number of sentence:
