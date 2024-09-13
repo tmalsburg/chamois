@@ -52,6 +52,24 @@ class TPxReadingTrial(ReadingTrial):
     time.sleep(0.05)
     w, h = window.size
     while True:
+      # Checking keyboard events:
+      self.event, self.values = window.read(timeout=1)
+      if self.event=="__TIMEOUT__":
+        pass
+      # Weird but sometimes event is None when the window is closed.
+      # Even with the None check in pace we sometimes get a messy
+      # abort and stack trace.
+      elif not self.event or self.event == WIN_CLOSED:
+        dp.DPxUpdateRegCache()
+        self.tpx.stop_recording()
+        raise ExperimentAbortException()
+      elif self.event.startswith('space:'):
+        break
+      elif self.event.startswith('Escape:'):
+        self.response = "ABORTED"
+        print("  Page aborted.")
+        break
+      # Checking if participant is looking at corner of screen:
       dp.DPxUpdateRegCache()
       eyeData = dp.TPxGetEyePosition()
       lx, ly, rx, ry = eyeData[0:4]
@@ -59,15 +77,6 @@ class TPxReadingTrial(ReadingTrial):
       x = (lx+rx)/2 + w/2
       y = (ly+ry)/2 + h/2
       if math.sqrt((x-w)**2 + y**2) < self.trigger_radius:
-        break
-      if self.event.startswith('space:'):
-        break
-      if self.event == WIN_CLOSED:
-        dp.DPxUpdateRegCache()
-        self.tpx.stop_recording()
-        raise ExperimentAbortException()
-      if self.event.startswith('Escape:'):
-        self.response = "ABORTED"
         break
     dp.DPxUpdateRegCache()
     self.deactivate()
