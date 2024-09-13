@@ -39,6 +39,17 @@ class Page:
     self.starttime = round(time.time() - exp_starttime, 3)
     self.prelude(window)
     self.handle_event(window)
+    # Print message in terminal:
+    stim_abbrev = self.stimulus or ""
+    stim_abbrev = stim_abbrev.replace("\n", "")
+    if len(stim_abbrev)>50:
+      stim_abbrev = stim_abbrev[:49] + "…"
+    if self.item and self.condition:
+      print("%d, %s (%s, %s): %s" % (self.pno, self.type, self.item, self.condition, stim_abbrev))
+    elif stim_abbrev:
+      print("%d, %s: %s" % (self.pno, self.type, stim_abbrev))
+    else:
+      print("%d, %s" % (self.pno, self.type))
   # Optional stage-setting that can only be performed once the page is
   # displayed:
   def prelude(self, window):
