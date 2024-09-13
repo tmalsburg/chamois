@@ -211,6 +211,9 @@ class ReadingTrial(ExperimentalTrial):
         raise ExperimentAbortException()
       if self.event.startswith('space:'):
         break
+      if self.event.startswith('Escape:'):
+        self.response = "ABORTED"
+        break
     self.deactivate()
 
 class YesNoQuestionTrial(ExperimentalTrial):
