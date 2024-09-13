@@ -142,12 +142,16 @@ The data format of the eye-tracking data depends on the eye-tracker and the user
 
 ## Details on individual page types
 
-### ReadingTrial and TPxReadingTrials
+### `ReadingTrial` and `TPxReadingTrials`
 There are 4 ways to end a TPxReadingTrial (with eye-tracking):
 1. Looking at the lower right corner of the screen is the normal way to end a TPxReadingTrial.  The trigger region is a circle around the corner that has a radius of 200 pixels by default.  The radius can be adjusted using the `trigger_radius` parameter of the constructor of TPxReadingTrial, e.g: `TPxReadingTrial(item, condition, sentence, tpx, trigger_radius=250)`
 2. Alternatively the trial can be ended by pressing space bar.  This can be a plan B when the calibration is so poor that looking at the corner doesn’t work.
 3. Pressing escape aborts the trial.  In this case, the response field in the session log will show `ABORTED`.  This is useful in cases such as when the participant was distracted.  Note that a comprehension question for this trial may still be shown.  In this case, the participant can give a random response.
 4. It’s always an option to just close the window which aborts the whole experiment and stores the session log so far.
 
-ReadingTrials (no eye-tracking) support options 2–4 in the above list.
+`ReadingTrial` (no eye-tracking) supports options 2–4 in the above list.
+
+### `Next` and `TPxNext`
+
+These page types can be used between trials to give participants a chance to take a break and, in the case of `TPxNext`, to give the experimenter a chance to recalibrate the eye-tracker (press `r` key).
 
