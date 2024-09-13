@@ -89,10 +89,12 @@ class TPxCalibration():
     self.type      = type(self).__name__
     self.tpx       = tpx
     self.starttime = None
+    self.completed = None
   def activate(self, _, pno):
     self.pno = pno
     self.starttime = round(time.time() - exp_starttime, 3)
     self.tpx.calibrate()
+    self.completed = True
   def get_data(self):
     return (self.pno, self.type, self.starttime, None, None, None, None, None, None, None, None)
 
@@ -101,8 +103,8 @@ class TPxQuickCalibration(TPxCalibration):
     self.pno = pno
     self.starttime = round(time.time() - exp_starttime, 3)
     self.tpx.calibrate(True)
+    self.completed = True
 
-class TPxNext(Next):
   def __init__(self, tpx):
     super().__init__()
     self.layout.append(
