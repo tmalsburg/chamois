@@ -93,6 +93,23 @@ class TPxQuickCalibration(TPxCalibration):
     self.starttime = round(time.time() - exp_starttime, 3)
     self.tpx.calibrate(True)
 
+class TPxNext(Next):
+  def __init__(self, tpx):
+    super().__init__()
+    self.layout.append(
+      [Text("[r] key for eye-tracker recalibration", font=f"{font} {int(fontsize*0.7)}", text_color="grey79")]]
+    self.tpx = tpx
+  def handle_event(self, window):
+    while True:
+      self.event, self.values = window.read()
+      if self.event == WIN_CLOSED:
+        raise ExperimentAbortException()
+      if self.event.startswith('space:'):
+        break
+      if self.event.startswith('r:'):
+        self.tpx.calibrate(True)
+    self.deactivate()
+
 #
 # TPxSimpleCalibration.py
 # 
