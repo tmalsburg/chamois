@@ -66,7 +66,7 @@ pages.append(
   CenteredInstructions("First some practice sentences!"))
 
 for i,c,s,q in practice_sentence:
-  pages.append(TPxReadingTrial(i,c,s,tpx))
+  pages.append(TPxReadingTrial(i,c,s,tpx,trigger_radius=200))
   pages.append(YesNoQuestionTrial(i,c,q))
   pages.append(TPxNext(tpx))
 
@@ -75,7 +75,7 @@ pages.append(
   CenteredInstructions("Now, on to the real experiment!"))
 
 for i,c,s,q in stimuli:
-  pages.append(TPxReadingTrial(i,c,s,tpx))
+  pages.append(TPxReadingTrial(i,c,s,tpx,trigger_radius=200))
   if random.choice([True, False]):
     pages.append(YesNoQuestionTrial(i,c,q))
   pages.append(TPxNext(tpx))
