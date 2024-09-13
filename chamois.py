@@ -423,4 +423,3 @@ def load_stimuli(filename):
       stimuli.append(row)
   return stimuli
 
-# def test_char_width(text):
