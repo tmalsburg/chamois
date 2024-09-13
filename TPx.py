@@ -105,10 +105,13 @@ class TPxQuickCalibration(TPxCalibration):
     self.tpx.calibrate(True)
     self.completed = True
 
+class TPxNext(Instructions):
   def __init__(self, tpx):
-    super().__init__()
-    self.layout.append(
-      [Text("[r] key for eye-tracker recalibration", font=f"{font} {int(fontsize*0.7)}", text_color="grey79")])
+    layout = [[VPush()],
+              [Text("Press space bar to continue.")],
+              [VPush()],
+              [Text("[r] key for eye-tracker recalibration", font=f"{font} {int(fontsize*0.7)}", text_color="grey79")]]
+    super().__init__(layout, element_justification="center")
     self.tpx = tpx
   def handle_event(self, window):
     while True:
