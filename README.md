@@ -1,19 +1,19 @@
 
-Chamois is a Python application that aims to make eye-tracking experiments on reading behavior as easy as possible.  The focus is on stimulus presentation and recording of user responses.  Chamois doesn’t support any particular eye-tracker out of the box.  But it is relatively easy to make it work with any eye-tracker that has a Python API.  A simple demo experiment for TRACKPixx3 trackers is linked below.  Via PyGaze most other eye-tracker could be used as well.
+Chamois is a Python application that aims to make state-of-the-art eye-tracking experiments on reading behavior as easy as possible.  The focus is on stimulus presentation and recording of user responses.  Chamois doesn’t support any particular eye-tracker but is designed to be used with any eye-tracker that has a Python API.  A demo experiment for TRACKPixx3 trackers is linked below.  Using PyGaze most other eye-trackers could be used as well.
 
-**Current status:** Chamois is work in progress.  I wrote it for my own lab and share it without any warranty.  It seems to work pretty well, but definitely has some rough edges.  If you’re interested in using it, feel free to contact me first to discuss it.
+**Status:** Chamois is work in progress.  I wrote it for my own lab and share it without any warranty.  It seems to work pretty well, but definitely has some rough edges.  If you’re interested in using it, feel free to contact me to discuss it.
 
 **Key features:**
-- Chamois is inspired by Ibex: Configuration and data format are similar but much simpler.
+- Chamois is inspired by [Ibex](https://github.com/addrummond/ibex): Configuration and data format are similar but simpler.
 - Implements most of the usual best-practices, so that users don’t have to reinvent the wheel.  E.g:
   - Blinking fixation target at the beginning of a trial.
   - Trial ends when participant looks at lower-right corner of screen.
 - Sanity checking of stimuli and support for Latin square designs.  Chamois automatically picks the most underrepresented list.
 - Chamois is eye-tracker agnostic and can be combined with almost any eye-tracking system via [PyGaze](https://www.pygaze.org/) or manufacturer APIs such as pylink and pypixx.
-- Runs on Linux, MacOS, and Windows.  Only dependency is [PySimpleGui](https://www.pysimplegui.org).
-- With less than 400 lines of code, Chamois is easy to hack and extend even for users with only basic Python knowledge.
+- Runs on Linux, MacOS, and Windows.  Only dependency is [FreeSimpleGui](https://github.com/spyoungtech/FreeSimpleGUI).
+- With only a small amount of code, Chamois is relatively easy to hack and extend even for users with only limited Python knowledge.
 
-Chamois was not specifically designed for timing-sensitive experiments, e.g. those using the boundary paradigm.  Eye-movement contingent display-changes could be implemented but may be too slow to be executed during saccades.
+**A non-feature:** Chamois was not designed for timing-sensitive experiments, e.g. those using the boundary paradigm.  Eye-movement contingent display-changes could be implemented but may be too slow to be executed during saccades.
 
 # Demo experiment
 
