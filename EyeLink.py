@@ -1,9 +1,10 @@
 """SR Research EyeLink layer. Everything that talks to an EyeLink
 tracker (developed for the EyeLink 1000 Plus) lives in this file, built
 on top of the generic engine in chamois.py. It is the EyeLink
-counterpart of TPx.py and offers the same names (setup_hardware,
-shutdown_hardware, ReadingTrial, ExperimentApp, assign_pixel_codes), so
-the experiment script only has to pick one of the two modules. On a
+counterpart of TPx.py and offers the same interface (the EyeLink class
+at the end of this file: settings as keyword arguments, ReadingTrial,
+ExperimentApp, setup, shutdown), so the experiment script only has to
+pick one of the two. On a
 machine without a reachable EyeLink the module drops into dummy mode:
 no calibration, no gaze, eye-tracking CSVs with only a header row, and
 reading trials end with the space bar.
@@ -74,8 +75,8 @@ try:
     import pylink
 except ImportError:
     sys.exit(
-        "pylink is not installed. Start the experiment with "
-        "`uv run demo_experiment.py`, which installs it (package "
+        "pylink could not be loaded. Start the experiment with "
+        "`uv run demo_experiment_eyelink.py`, which installs it (package "
         "sr-research-pylink)."
     )
 
@@ -83,7 +84,10 @@ import chamois
 from chamois import pkey
 
 # --------------------------------------------------------------------
-# Tracker settings. Sizes are in height units (1.0 = screen height),
+# Tracker settings: the defaults. An experiment script changes them
+# through the EyeLink class at the end of this file, with the same
+# names in lower case, e.g. EyeLink(host_ip="102.1.1.1",
+# drift_check=True). Sizes are in height units (1.0 = screen height),
 # like in chamois.py.
 # --------------------------------------------------------------------
 HOST_IP = "100.1.1.1"      # the Host PC; the Display PC needs 100.1.1.2
@@ -139,17 +143,8 @@ hardware_present = False
 edf_name = None            # the EDF's name on the Host (8 characters)
 
 
-def assign_pixel_codes(conditions):
-    """Nothing to do: TPx.py stamps the condition into every sample via
-    the pixel-mode tag, whereas an EyeLink gets each trial's item and
-    condition as messages in the EDF (see EyeLinkReadingTrial). Kept so
-    the experiment script can call the same function for both
-    trackers."""
-
-
 def setup_hardware():
     global tracker, hardware_present, edf_name
-    assert HOST_DISPLAY in ('image', 'text'), HOST_DISPLAY
     try:
         tracker = pylink.EyeLink(HOST_IP)
     except RuntimeError as e:
@@ -264,10 +259,12 @@ HOST_ASCII = str.maketrans({
     '‚': "'", '—': '-', '–': '-', '…': '...'})
 
 
-def host_text(x, y, text, color=HOST_TEXT_COLOR):
+def host_text(x, y, text, color=None):
     """One line of text on the Host screen, centered on (x, y) (pixels,
-    origin top left). Characters without an ASCII form (e.g. Arabic)
-    are left out."""
+    origin top left), in HOST_TEXT_COLOR unless a color is given.
+    Characters without an ASCII form (e.g. Arabic) are left out."""
+    if color is None:
+        color = HOST_TEXT_COLOR
     text = unicodedata.normalize('NFKD', text.translate(HOST_ASCII))
     text = text.encode('ascii', 'ignore').decode().strip()
     if text:
@@ -479,13 +476,19 @@ class EyeLinkReadingTrial(chamois.ReadingTrial):
     still work as a fallback, and are the only way to end a trial in
     dummy mode."""
 
-    def __init__(self, item, condition, text, trigger_radius=TRIGGER_RADIUS,
-                 trigger_dwell=TRIGGER_DWELL, **layout):
+    corner_target = True    # show the look-target that ends the trial
+
+    def __init__(self, item, condition, text, trigger_radius=None,
+                 trigger_dwell=None, **layout):
         # `layout` is passed straight to chamois.ReadingTrial:
-        # y_offset, align, cross_position.
+        # y_offset, align, cross_position, wrap.
         super().__init__(item, condition, text, **layout)
-        self.trigger_radius = trigger_radius
-        self.trigger_dwell = trigger_dwell
+        # None = the tracker-wide setting, read now and not when this
+        # file was loaded, so that EyeLink(trigger_radius=...) counts:
+        self.trigger_radius = (TRIGGER_RADIUS if trigger_radius is None
+                               else trigger_radius)
+        self.trigger_dwell = (TRIGGER_DWELL if trigger_dwell is None
+                              else trigger_dwell)
 
     def build(self, app):
         super().build(app)
@@ -539,8 +542,9 @@ class EyeLinkReadingTrial(chamois.ReadingTrial):
                                  self.text.split()):
                 left, top, right, bottom = (int(v) for v in box.split(","))
                 host_text((left + right) / 2, (top + bottom) / 2, word)
-            tracker.sendCommand("draw_cross %d %d %d" % (
-                self.cross_x, h - self.cross_y, HOST_CROSS_COLOR))
+            tracker.sendCommand(
+                f"draw_cross {int(self.cross_x)} {int(h - self.cross_y)} "
+                f"{int(HOST_CROSS_COLOR)}")
             tracker.sendCommand(f"draw_box {w - r} {h - r} {w - 1} "
                                 f"{h - 1} {HOST_TRIGGER_COLOR}")
 
@@ -571,9 +575,8 @@ class EyeLinkReadingTrial(chamois.ReadingTrial):
         app.skip_next_dt()   # startRecording blocks for a moment
 
     def csv_name(self):
-        return "%s_page-%03d_%s_item-%03d_cond-%s.csv" % (
-            chamois.session_prefix(), self.pno, self.type, self.item,
-            self.condition)
+        return (f"{chamois.session_prefix()}_page-{self.pno:03d}_{self.type}"
+                f"_item-{self.item:03d}_cond-{self.condition}.csv")
 
     def show_words(self, app):
         super().show_words(app)
@@ -773,8 +776,8 @@ class EyeLinkExperimentApp(chamois.ExperimentApp):
                 HOST_DISPLAY = 'text'
         if HOST_DISPLAY == 'text':
             as_text()
-        print("  Host screen (%s) drawn in %.0f ms." % (
-            HOST_DISPLAY, 1000 * (time.perf_counter() - started)))
+        print(f"  Host screen ({HOST_DISPLAY}) drawn in "
+              f"{1000 * (time.perf_counter() - started):.0f} ms.")
 
     def _host_image(self, draw, name):
         """Render draw() offscreen, copy it to the Host as a PNG file and
@@ -982,6 +985,63 @@ class CalibrationPage(chamois.Page):
         app.advance()
 
 
-# The names the experiment script uses, the same in TPx.py:
-ReadingTrial = EyeLinkReadingTrial
-ExperimentApp = EyeLinkExperimentApp
+# --------------------------------------------------------------------
+# What the experiment script uses: one object for the whole tracker.
+#
+#     from EyeLink import EyeLink
+#     tracker = EyeLink()                        # all defaults
+#     tracker = EyeLink(host_ip="102.1.1.1",     # some non-defaults
+#                       drift_check=True)
+#
+#     pages.append(tracker.CalibrationPage())
+#     pages.append(tracker.ReadingTrial(item, condition, sentence))
+#     tracker.setup()
+#     try:
+#         tracker.ExperimentApp(pages).run()
+#     finally:
+#         tracker.shutdown()
+#
+# TPx.py offers the same interface (without the calibration page).
+# --------------------------------------------------------------------
+class EyeLink:
+    """The EyeLink. The keyword arguments are the tracker settings from
+    the top of this file, in lower case; whatever is not given keeps
+    its default. There is one tracker per experiment, so the settings
+    are stored in this module, where every class in this file reads
+    them."""
+
+    SETTINGS = ('host_ip', 'drift_check', 'gaze_display', 'gaze_marker',
+                'marker_radius', 'trigger_radius', 'trigger_dwell',
+                'host_display', 'host_text_color', 'host_cross_color',
+                'host_trigger_color')
+    CHOICES = {'gaze_display': ('host', 'both'),
+               'gaze_marker': ('eyes', 'average'),
+               'host_display': ('image', 'text')}
+
+    ReadingTrial = EyeLinkReadingTrial
+    ExperimentApp = EyeLinkExperimentApp
+    CalibrationPage = CalibrationPage
+
+    def __init__(self, **settings):
+        # Everything is checked first, and only then stored:
+        for name, value in settings.items():
+            if name not in self.SETTINGS:
+                raise TypeError(
+                    f"EyeLink() has no setting {name!r}. The settings are: "
+                    f"{', '.join(self.SETTINGS)}.")
+            allowed = self.CHOICES.get(name)
+            if allowed and value not in allowed:
+                raise ValueError(
+                    f"{name} must be one of {allowed}, not {value!r}.")
+        for name, value in settings.items():
+            globals()[name.upper()] = value
+
+    def setup(self):
+        """Connect to the Host PC and open the session's EDF (dummy
+        mode if no Host answers). Call after chamois.new_session()."""
+        setup_hardware()
+
+    def shutdown(self):
+        """Stop recording, fetch the EDF and close the link. Call in a
+        `finally`, so that it also runs after an error."""
+        shutdown_hardware()

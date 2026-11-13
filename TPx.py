@@ -70,15 +70,17 @@ except ImportError:
     sys.exit(
         "pypixxlib is not installed. Run setup_once.py once (python3 on "
         "Linux/macOS, python on Windows), then start the experiment with "
-        "`uv run demo_experiment.py`."
+        "`uv run demo_experiment_tpx.py`."
     )
 
 import chamois
-from chamois import FONT_NAME, pkey
+from chamois import pkey
 
 # --------------------------------------------------------------------
-# Hardware settings. Sizes are in height units (1.0 = screen height),
-# like in chamois.py.
+# Hardware settings: the defaults. An experiment script changes them
+# through the TPx class at the end of this file, with the same names
+# in lower case, e.g. TPx(gaze_display='both', trigger_dwell=0.1).
+# Sizes are in height units (1.0 = screen height), like in chamois.py.
 # --------------------------------------------------------------------
 TRIGGER_RADIUS = 0.19      # size of the trial-ending corner region
 TRIGGER_DWELL = 0.08       # seconds the gaze must stay in that region
@@ -495,13 +497,19 @@ class TPxReadingTrial(chamois.ReadingTrial):
     from the base class still work as a fallback, and are the only way
     to end a trial in dry-run mode."""
 
-    def __init__(self, item, condition, text, trigger_radius=TRIGGER_RADIUS,
-                 trigger_dwell=TRIGGER_DWELL, **layout):
+    corner_target = True    # show the look-target that ends the trial
+
+    def __init__(self, item, condition, text, trigger_radius=None,
+                 trigger_dwell=None, **layout):
         # `layout` is passed straight to chamois.ReadingTrial:
-        # y_offset, align, cross_position.
+        # y_offset, align, cross_position, wrap.
         super().__init__(item, condition, text, **layout)
-        self.trigger_radius = trigger_radius
-        self.trigger_dwell = trigger_dwell
+        # None = the tracker-wide setting, read now and not when this
+        # file was loaded, so that TPx(trigger_radius=...) counts:
+        self.trigger_radius = (TRIGGER_RADIUS if trigger_radius is None
+                               else trigger_radius)
+        self.trigger_dwell = (TRIGGER_DWELL if trigger_dwell is None
+                              else trigger_dwell)
 
     def validate(self, app):
         super().validate(app)
@@ -517,8 +525,10 @@ class TPxReadingTrial(chamois.ReadingTrial):
                 f"Condition {self.condition!r} (item {self.item}) has no "
                 "pixel code: every eye sample of this trial would "
                 "silently get DigitalOut = 0, as if no trial were "
-                "running. FIX: include this condition in the list passed "
-                "to TPx.assign_pixel_codes() in build_pages().")
+                "running. Codes are assigned automatically from the "
+                "reading trials when the app is created; if the script "
+                "calls assign_pixel_codes() from TPx.py itself, FIX: include "
+                "this condition in the list passed to it.")
         if code in RESERVED_PIXEL_CODES:
             raise RuntimeError(
                 f"Condition {self.condition!r} is assigned pixel code "
@@ -528,10 +538,10 @@ class TPxReadingTrial(chamois.ReadingTrial):
                 "it would paint a colored dot into the top-left corner "
                 "of the console and be indistinguishable from a gaze "
                 "marker in the DigitalOut data. FIX: let "
-                "TPx.assign_pixel_codes() number the conditions "
+                "assign_pixel_codes() in TPx.py number the conditions "
                 "automatically (it skips reserved codes), or hand-pick "
                 "any code from 1-255 that is not in "
-                "TPx.RESERVED_PIXEL_CODES.")
+                "RESERVED_PIXEL_CODES (TPx.py).")
 
     def build(self, app):
         super().build(app)
@@ -590,9 +600,9 @@ class TPxReadingTrial(chamois.ReadingTrial):
         if self.state == 'reading':
             self.recorder.stop()
             path = chamois.data_path(
-                "eyetracking", "%s_page-%03d_%s_item-%03d_cond-%s.csv" % (
-                    chamois.session_prefix(), self.pno, self.type,
-                    self.item, self.condition))
+                "eyetracking",
+                f"{chamois.session_prefix()}_page-{self.pno:03d}_{self.type}"
+                f"_item-{self.item:03d}_cond-{self.condition}.csv")
             self.recorder.save_csv(path)
             self.metadata2 = path
         super().deactivate(app)
@@ -616,6 +626,12 @@ class TPxExperimentApp(chamois.ExperimentApp):
         self._black_hold = 0          # final black frames after readback
         self.gaze = (0.0, 0.0, 0.0, 0.0)
         self.program, self.quad = make_packing_program()
+
+        # The pixel-mode codes, one per condition of the reading
+        # trials, unless the script has assigned its own already:
+        if not condition_pixel_codes:
+            assign_pixel_codes(page.condition for page in pages
+                               if isinstance(page, TPxReadingTrial))
 
         assert GAZE_DISPLAY in ('console', 'stimulus', 'both'), GAZE_DISPLAY
         assert GAZE_MARKER in ('eyes', 'average'), GAZE_MARKER
@@ -658,7 +674,7 @@ class TPxExperimentApp(chamois.ExperimentApp):
         self.tag_debug = pyglet.shapes.Rectangle(
             0, h - 54, 40, 40, color=(0, 0, 0))
         self.tag_debug_label = pyglet.text.Label(
-            "", font_name=FONT_NAME, font_size=12,
+            "", font_name=chamois.FONT_NAME, font_size=12,
             x=48, y=h - 34, anchor_y='center',
             color=(*chamois.TEXT_COLOR, 255))
 
@@ -915,6 +931,64 @@ class TPxExperimentApp(chamois.ExperimentApp):
             super().on_text(text)
 
 
-# The names the experiment script uses, the same in EyeLink.py:
-ReadingTrial = TPxReadingTrial
-ExperimentApp = TPxExperimentApp
+# --------------------------------------------------------------------
+# What the experiment script uses: one object for the whole tracker.
+#
+#     from TPx import TPx
+#     tracker = TPx()                        # all defaults
+#     tracker = TPx(gaze_display='both')     # some non-defaults
+#
+#     pages.append(tracker.ReadingTrial(item, condition, sentence))
+#     tracker.setup()
+#     try:
+#         tracker.ExperimentApp(pages).run()
+#     finally:
+#         tracker.shutdown()
+#
+# EyeLink.py offers the same interface.
+# --------------------------------------------------------------------
+class TPx:
+    """The TRACKPixx3/DATAPixx3. The keyword arguments are the hardware
+    settings from the top of this file, in lower case; whatever is not
+    given keeps its default. There is one tracker per experiment, so
+    the settings are stored in this module, where every class in this
+    file reads them."""
+
+    SETTINGS = ('gaze_display', 'gaze_marker', 'marker_radius',
+                'stimulus_marker_gray', 'trigger_radius', 'trigger_dwell',
+                'show_eye_image', 'show_dry_run_tag')
+    CHOICES = {'gaze_display': ('console', 'stimulus', 'both'),
+               'gaze_marker': ('eyes', 'average')}
+
+    ReadingTrial = TPxReadingTrial
+    ExperimentApp = TPxExperimentApp
+
+    def __init__(self, **settings):
+        # Everything is checked first, and only then stored:
+        for name, value in settings.items():
+            if name not in self.SETTINGS:
+                raise TypeError(
+                    f"TPx() has no setting {name!r}. The settings are: "
+                    f"{', '.join(self.SETTINGS)}.")
+            allowed = self.CHOICES.get(name)
+            if allowed and value not in allowed:
+                raise ValueError(
+                    f"{name} must be one of {allowed}, not {value!r}.")
+        gray = settings.get('stimulus_marker_gray')
+        if gray in RESERVED_PIXEL_CODES:
+            raise ValueError(
+                f"stimulus_marker_gray = {gray} is the index of a console "
+                "color; use another gray level than "
+                f"{sorted(RESERVED_PIXEL_CODES)}.")
+        for name, value in settings.items():
+            globals()[name.upper()] = value
+
+    def setup(self):
+        """Open the DATAPixx3 and switch to M16 mode (dry-run mode
+        without a device). Call after chamois.new_session()."""
+        setup_hardware()
+
+    def shutdown(self):
+        """Restore normal video mode. Call in a `finally`, so that it
+        also runs after an error."""
+        shutdown_hardware()

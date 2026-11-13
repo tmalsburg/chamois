@@ -1,315 +1,70 @@
 # /// script
-# requires-python = ">=3.9"
-# dependencies = ["pyglet>=2.0", "numpy", "pypixxlib", "sr-research-pylink"]
-#
-# [tool.uv.sources]
-# pypixxlib = { path = "vendor/pypixxlib-1.12.1.tar.gz" }
+# requires-python = ">=3.12"
+# dependencies = ["pyglet>=2.0"]
 # ///
-"""A reading experiment with eye-tracking, written in pure Pyglet.
-This is the file you run; the machinery sits next to it, one job per
-file:
+"""Hello world: the smallest reading experiment, without eye-tracking
+and with the sentences right here in the script. Run it with
 
-    chamois.py   the engine (pages, log, layout, Latin square);
-                 knows nothing about eye trackers
-    TPx.py       the VPixx TRACKPixx3/DATAPixx3 layer (M16 shader, gaze,
-                 recording)
-    EyeLink.py   the SR Research EyeLink layer (calibration, gaze,
-                 recording, EDF)
+    uv run demo_experiment.py
 
-Which tracker is used is set with EYETRACKER below: 'trackpixx',
-'eyelink', or 'none' for a plain reading experiment without
-eye-tracking.
+Space continues and ends a reading trial, f / j answer a question with
+no / yes, Ctrl+Q aborts the experiment. The log, and a screenshot of
+every trial, land in data/.
 
-Flow: participant ID, welcome screen, practice sentences, the
-Latin-square-balanced experimental trials with comprehension questions
-and breaks, thank-you screen. Every page becomes one row in the
-session log; every reading trial additionally saves an eye-tracking
-CSV and a screenshot. Everything lands in data/.
-
-How to run
-    1. TRACKPixx: calibrate in LabMaestro first; with this tracker the
-       script never calibrates on its own, it only warns at startup if
-       no calibration exists. EyeLink: calibration is part of the
-       experiment, right after the participant ID (run from the Host
-       PC; Escape there continues with the experiment).
-    2. uv run demo_experiment.py
-       (first time on a new machine: python3 setup_once.py)
-
-Stimuli
-    Experimental items come from stimuli.tsv, fillers from
-    fillers.tsv, both next to this script: four tab-separated columns,
-    no header — item number, condition, sentence, question. A literal
-    \\n inside a sentence becomes a line break on screen. If a file is
-    missing, small built-in stimuli are used instead, so the flow can
-    be tested without any files.
-
-No tracker?
-    Without a connected DATAPixx3 (or a reachable EyeLink Host PC) the
-    experiment runs in dry-run mode: normal (non-M16) display, no gaze
-    markers, eye-tracking CSVs with only a header row, and reading
-    trials end with space. EYETRACKER = 'none' runs the same experiment
-    without any eye-tracking code at all. For
-    debugging the trial tagging, TPx.SHOW_DRY_RUN_TAG = True draws a
-    visible stand-in for the (by design invisible) pixel-mode tag: a
-    blue swatch with the condition code in the top left corner.
-
-Keys (experimenter keys are deliberately not shown on screen)
-    space   continue / end a reading trial (fallback if the gaze
-            trigger fails)
-    f / j   answer a comprehension question with no / yes
-    r       on instruction and break screens: recalibrate mid-session.
-            TRACKPixx: the window minimizes and normal video mode is
-            restored; recalibrate in LabMaestro, return to the
-            experiment window, press space to bring the display back,
-            then space again to continue. EyeLink: the calibration
-            screen opens, as at the start.
-    Escape  abort the current reading trial (logged as ABORTED)
-    Ctrl+Q  abort the whole experiment (a partial log is saved)
-
-    Reading trials normally end on their own, when the participant
-    looks at the lower right corner for a moment (see
-    TRIGGER_RADIUS and TRIGGER_DWELL in TPx.py / EyeLink.py).
+For a real experiment (practice trials, conditions, fillers, stimuli
+in files, an eye tracker) see demo_experiment_tpx.py (VPixx
+TRACKPixx3) and demo_experiment_eyelink.py (SR Research EyeLink).
 """
-
-import os
-import random
-import sys
-from types import SimpleNamespace
 
 import chamois
 
-# --------------------------------------------------------------------
-# The eye tracker: 'trackpixx' (VPixx TRACKPixx3/DATAPixx3), 'eyelink'
-# (SR Research EyeLink) or 'none' (no eye-tracking). Only the chosen
-# tracker's module is loaded.
-# --------------------------------------------------------------------
-EYETRACKER = 'trackpixx'
+# Settings. All of them have defaults (listed at the top of
+# chamois.py); to change some, name them here. For example the font
+# size (a fraction of the screen height) and the text below every
+# instruction screen, e.g. to translate it:
+chamois.settings(fontsize=0.03,
+                 continue_text="Press the space bar to continue.",
+                 subject_id_prompt="what is your participant ID?")
 
-if EYETRACKER == 'trackpixx':
-    import TPx as tracker
-elif EYETRACKER == 'eyelink':
-    import EyeLink as tracker
-elif EYETRACKER == 'none':
-    # The plain engine, with do-nothing stand-ins for the tracker setup:
-    tracker = SimpleNamespace(
-        ReadingTrial=chamois.ReadingTrial,
-        ExperimentApp=chamois.ExperimentApp,
-        assign_pixel_codes=lambda conditions: None,
-        setup_hardware=lambda: None,
-        shutdown_hardware=lambda: None)
-else:
-    sys.exit(f"EYETRACKER must be 'trackpixx', 'eyelink' or 'none', "
-             f"not {EYETRACKER!r}.")
+# The sentences: item number, condition, sentence, question. The
+# first two come with a yes/no question, the last two with a question
+# that is answered by typing.
 
-# --------------------------------------------------------------------
-# Stimulus files: targets in stimuli.tsv, fillers in fillers.tsv, next
-# to this script. Both .tsv and .csv are picked up automatically; if a
-# file is missing, the built-in fallback below is used instead.
-# --------------------------------------------------------------------
-
-STIMULI_BASE = "stimuli"
-FILLERS_BASE = "fillers"
-
-# --------------------------------------------------------------------
-# Trial layout: where the text and the blinking fixation cross appear.
-# These are handed to every reading trial (the corner look-target that
-# ends a trial is not affected — it always sits in the lower right).
-#
-# Y_OFFSET  vertical position of the text block's center, in height
-#           units (1.0 = full screen height), origin at the screen
-#           center, y pointing up:
-#               0.0 = centered on the screen, 0.15 = a bit above the
-#               center, -0.15 = a bit below, 0.3 = clearly up, ...
-# ALIGN     horizontal alignment of the lines: 'center', or 'left' /
-#           'right' (indented LEFT_MARGIN — set in chamois.py, default
-#           0.08 — from the screen edge).
-# CROSS_POSITION  where the blinking cross shows: 'center' = middle of
-#           the text block (= the screen center while Y_OFFSET is 0),
-#           'left' = just before the first word, 'right' = just past
-#           the end of the first line.
-# --------------------------------------------------------------------
-
-Y_OFFSET = 0.0
-ALIGN = 'left'
-CROSS_POSITION = 'left'
-
-# --------------------------------------------------------------------
-# Automatic line breaking
-#
-# A manual "\n" in a stimulus is always honored: a sentence that
-# already contains one is shown exactly as written, so hand-placed
-# breaks in the target items are never disturbed.
-#
-# Sentences without a manual break can be wrapped automatically, which
-# is convenient for fillers, where the break position is not part of
-# the design and typing "\n" by hand is tedious. WRAP_WIDTH is the
-# maximum number of characters per line; the reading font is
-# monospaced, so a character count maps directly to on-screen width.
-# Wrapping is greedy: each line takes as many words as fit, and the
-# word that would push it past WRAP_WIDTH starts the next line, so a
-# line may end a little short but never runs over.
-#
-# WRAP_WIDTH = None turns the whole feature off (the default). Set a
-# character count to enable it, then choose the categories with the
-# three flags.
-
-
-# --------------------------------------------------------------------
-WRAP_WIDTH = None       # e.g. 55 wraps to ~55 chars/line; None = off
-WRAP_PRACTICE = False   # auto-wrap practice sentences?
-WRAP_TARGETS = False    # auto-wrap target items (stimuli.tsv)?
-WRAP_FILLERS = True     # auto-wrap fillers (fillers.tsv)?
-
-# Percentage of main-experiment trials (targets and fillers) that are
-# followed by a comprehension question: 0 = none, 100 = every trial.
-# The count is exact (e.g. 30 % of 40 trials = 12 questions for every
-# participant); which trials get one is drawn anew per session.
-# Practice items always get a question.
-QUESTION_PERCENT = 50
-
-# Practice items (multi-line), shown before the main experiment:
-practice_sentences = [
-  [101, "practice", "The weather was wonderful over the weekend. The sun shone without a break and\nit was pleasantly warm. Thomas seized the chance and went for a walk in the\npark. Along the way he met an old schoolfriend he had not seen for many\nyears. They talked for a long time about the past.", "Did Thomas meet an old friend in the park?"],
-  [102, "practice", "Julia loves to cook in her free time. Last night she tried out a new recipe\nfrom Italy. She spent two hours in the kitchen preparing the perfect pasta.\nUnfortunately it turned out in the end that she had used far too much salt.\nThe meal was barely edible.", "Was Julia happy with her finished meal?"],
+yesno_sentences = [
+    [1, "hello", "Hello world!", "Did the sentence say hello?"],
+    [2, "hello", "This is a sentence.", "Was this a sentence?"],
 ]
 
-# Fallbacks, only used when stimuli.tsv / fillers.tsv are missing:
-fallback_target_sentences = [
-  [1, "a", "While Bill hunted the deer was hunted by Bill.", "Did Bill hunt the deer?"],
-  [1, "b", "While Bill hunted the deer that was brown and nimble was hunted by Bill.", "Did Bill hunt the deer?"],
-  [2, "a", "While Mary bathed the baby bathed Mary.", "Did Mary bath the baby?"],
-  [2, "b", "While Mary bathed the baby that was small and cute bathed Mary.", "Did Mary bath the baby?"],
-  [3, "a", "Anna scolded the chef of the aristocrats who was routinely letting food go to waste.", "Did food go to waste?"],
-  [3, "b", "Anna studied with the chef of the aristocrats who was routinely letting food go to waste.", "Did food go to waste?"],
+typed_sentences = [
+    [3, "hello", "The cat sat on the mat.", "Where did the cat sit?"],
+    [4, "hello", "The dog chased the ball.", "What did the dog chase?"],
 ]
 
-fallback_fillers = [
-  [20, "filler", "Colorless green ideas sleep furiously.", "Does this sentence make any sense at all?"],
-  [21, "filler", "No head injury is too trivial to be ignored.", "Did that sentence make your brain hurt?"],
-]
+# An experiment is a series of pages:
 
+pages = []
 
-def wrap_sentence(text):
-    """Greedy line wrap: words are added to the current line as long
-    as the line (including the joining spaces) stays within WRAP_WIDTH
-    characters; the first word that would push it past the limit
-    starts the next line instead. A line may therefore end shorter
-    than WRAP_WIDTH — that is fine, no line ever exceeds it. A single
-    word longer than WRAP_WIDTH gets a line of its own, since words
-    are never split. Sentences that already contain a manual "\\n"
-    come back unchanged, as do one-word sentences. Does nothing when
-    WRAP_WIDTH is None."""
-    if not WRAP_WIDTH or "\n" in text:
-        return text
-    words = text.split()
-    if len(words) < 2:
-        return text
-    lines = []
-    current = words[0]
-    for word in words[1:]:
-        if len(current) + 1 + len(word) <= WRAP_WIDTH:
-            current += " " + word
-        else:
-            lines.append(current)
-            current = word
-    lines.append(current)
-    return "\n".join(lines)
+pages.append(chamois.SubjectIDPage())
+pages.append(chamois.CenteredInstructions("Welcome to this study!"))
 
+# Where the sentence appears:
+#   align     'left', 'center' or 'right'
+#   y_offset  height on the screen: 0.0 = middle, 0.3 = higher up,
+#             -0.3 = lower down (1.0 is the full screen height)
+# How often a question follows:
+#   percent   50 = after half of the sentences (chosen at random for
+#             every participant), 100 = after every sentence
 
-def apply_wrapping(rows, enabled):
-    """Wrap the sentence column of a stimulus list if `enabled` and
-    wrapping is switched on; otherwise return the rows unchanged."""
-    if not (enabled and WRAP_WIDTH):
-        return rows
-    return [[i, c, wrap_sentence(s), q] for i, c, s, q in rows]
+# Yes/no questions, answered with the keys f (no) and j (yes):
+for i, c, s, q in yesno_sentences:
+    pages.append(chamois.ReadingTrial(i, c, s, align='center', y_offset=0.0))
+    pages.append(chamois.YesNoQuestionTrial(i, c, q, percent=50))
 
+# Typed answers: the participant types and confirms with Enter:
+for i, c, s, q in typed_sentences:
+    pages.append(chamois.ReadingTrial(i, c, s, align='center', y_offset=0.0))
+    pages.append(chamois.ComprehensionTrial(i, c, q, percent=50))
 
-def load_or_fallback(base_name, fallback, what):
-    filename = None
-    for ext in ('.tsv', '.csv'):
-        path = base_name + ext
-        if os.path.isfile(path):
-            filename = path
-            break
+pages.append(chamois.CenteredInstructions("Thank you for your participation!"))
 
-    if filename is not None:
-        print(f"Loading {what} from {filename}")
-        return chamois.load_stimuli(filename)
-    print(f"No {base_name}.tsv or {base_name}.csv found — using the built-in {what}.")
-    return fallback
-
-
-# --------------------------------------------------------------------
-# The page sequence. With the TRACKPixx, calibration happens beforehand
-# in LabMaestro; with the EyeLink, right after the participant ID.
-# --------------------------------------------------------------------
-def build_pages():
-    target_sentences = load_or_fallback(
-        STIMULI_BASE, fallback_target_sentences, "target sentences")
-    fillers = load_or_fallback(FILLERS_BASE, fallback_fillers, "fillers")
-
-    # Wrap per category; a no-op unless WRAP_WIDTH is set, and manual
-    # line breaks are never touched (see wrap_sentence):
-    practice = apply_wrapping(practice_sentences, WRAP_PRACTICE)
-    target_sentences = apply_wrapping(target_sentences, WRAP_TARGETS)
-    fillers = apply_wrapping(fillers, WRAP_FILLERS)
-
-    stimuli = chamois.next_latin_square_list(target_sentences)
-    stimuli += fillers
-    random.shuffle(stimuli)
-    tracker.assign_pixel_codes(
-        [row[1] for row in practice] + [row[1] for row in stimuli])
-
-    pages = []
-    pages.append(chamois.SubjectIDPage())
-    if EYETRACKER == 'eyelink':
-        pages.append(tracker.CalibrationPage())
-    pages.append(chamois.CenteredInstructions("Welcome to this study!"))
-    pages.append(chamois.CenteredInstructions(
-        "We will begin with a few practice sentences."))
-    layout = dict(y_offset=Y_OFFSET, align=ALIGN,
-                  cross_position=CROSS_POSITION)
-    for i, c, s, q in practice:
-        pages.append(tracker.ReadingTrial(i, c, s, **layout))
-        pages.append(chamois.YesNoQuestionTrial(i, c, q))
-        pages.append(chamois.Next())
-    pages.append(chamois.CenteredInstructions(
-        "Now the main experiment begins. Please concentrate on the "
-        "sentences and answer the questions as accurately as possible."))
-    if not 0 <= QUESTION_PERCENT <= 100:
-        raise ValueError(f"QUESTION_PERCENT must be 0–100, not {QUESTION_PERCENT}")
-    n_questions = round(len(stimuli) * QUESTION_PERCENT / 100)
-    asked = set(random.sample(range(len(stimuli)), n_questions))
-    for k, (i, c, s, q) in enumerate(stimuli):
-        pages.append(tracker.ReadingTrial(i, c, s, **layout))
-        if k in asked:
-            pages.append(chamois.YesNoQuestionTrial(i, c, q))
-        pages.append(chamois.Next())
-    pages.append(chamois.CenteredInstructions(
-        "Thank you! The experiment is now complete."))
-    return pages
-
-
-def main():
-    chamois.new_session()
-    tracker.setup_hardware()
-    try:
-        app = tracker.ExperimentApp(build_pages())
-        try:
-            app.run()
-        except Exception as e:
-            if isinstance(e, chamois.ExperimentAbortException):
-                print("Experiment aborted.")
-            else:
-                print("An error occurred.")
-            # Whatever was completed up to this point is kept:
-            chamois.write_log(app.pages, partial=True)
-            if not isinstance(e, chamois.ExperimentAbortException):
-                raise
-            sys.exit(1)
-    finally:
-        tracker.shutdown_hardware()
-
-
-if __name__ == '__main__':
-    main()
+chamois.run_experiment(pages)

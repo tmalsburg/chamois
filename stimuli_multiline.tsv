@@ -1,0 +1,4 @@
+1	a	The detective had been working on the case for several months.\nOn Monday he finally believed the witness was telling the truth.\nThe trial began two weeks later in a crowded courtroom.	Did the detective believe the witness?
+1	b	The detective had been working on the case for several months.\nOn Monday he finally believed that the witness was telling the truth.\nThe trial began two weeks later in a crowded courtroom.	Did the detective believe the witness?
+2	a	The students had prepared for the final exam all week.\nDuring the break the teacher noticed the boy had copied the answers.\nShe decided to talk to his parents the next day.	Did the teacher talk to the parents on the same day?
+2	b	The students had prepared for the final exam all week.\nDuring the break the teacher noticed that the boy had copied the answers.\nShe decided to talk to his parents the next day.	Did the teacher talk to the parents on the same day?

@@ -17,11 +17,14 @@ from) and then put on screen by present(). Hardware layers subclass
 the app and override draw_overlay(), present() and tick(); see TPx.py
 and EyeLink.py. This file itself knows nothing about eye trackers.
 
-The file you actually run is demo_experiment.py.
+The file you actually run is an experiment script: a page list and a
+call of run_experiment(). See demo_experiment.py (no eye tracker),
+demo_experiment_tpx.py and demo_experiment_eyelink.py.
 """
 
 import csv
 import os
+import random
 import re
 import sys
 import time
@@ -34,6 +37,15 @@ from pyglet.image.buffer import Framebuffer
 from pyglet.window import key as pkey
 
 # --------------------------------------------------------------------
+# Settings: the defaults. An experiment script changes them with
+# settings() (below, after the last of them), using the same names in
+# lower case, e.g.
+#
+#     chamois.settings(fontsize=0.035,
+#                      continue_text="Weiter mit der Leertaste.")
+#
+# so this file never has to be edited.
+#
 # Layout settings. All sizes and distances are fractions of the screen
 # height (1.0 = full height), so the layout comes out the same on any
 # resolution; px() and font_pt() convert to pixels and font points once
@@ -86,11 +98,67 @@ def font_pt(size):
     return size * screen_height * 72.0 / 96.0
 
 
-# Participant-facing strings; edit these to translate the experiment.
+# Participant-facing strings; change these (with settings(), see
+# below) to translate the experiment.
 CONTINUE_TEXT = "Press the space bar to continue."
 YESNO_HINT = "[f] key for “no” — [j] key for “yes”"
 ANSWER_HINT = "Type your answer and press Enter to confirm."
 SUBJECT_ID_PROMPT = "Please enter participant ID:"
+
+# What settings() accepts, and what kind of value each one takes:
+SETTINGS = {
+    'font_name': 'font', 'fontsize': 'size', 'wordspacing': 'size',
+    'linespacing': 'size', 'left_margin': 'size', 'cross_size': 'size',
+    'screen_number': 'screen',
+    'background_color': 'color', 'text_color': 'color',
+    'hint_color': 'color', 'line_dot_color': 'color',
+    'continue_text': 'text', 'yesno_hint': 'text', 'answer_hint': 'text',
+    'subject_id_prompt': 'text',
+}
+
+
+def settings(**changes):
+    """Change settings from the experiment script, before
+    run_experiment(): chamois.settings(fontsize=0.035, text_color=(0,
+    0, 0), continue_text="..."). The names are the ones of the settings
+    above, in lower case; whatever is not named keeps its default. A
+    misspelled name or an impossible value stops the script."""
+    def is_number(v):
+        return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+    checks = {
+        'font': (lambda v: isinstance(v, str) or (
+                     isinstance(v, (tuple, list)) and v
+                     and all(isinstance(name, str) for name in v)),
+                 "a font name, or several to try in turn, e.g. "
+                 "('Courier', 'DejaVu Sans Mono')"),
+        'size': (lambda v: is_number(v) and 0 < v < 1,
+                 "a fraction of the screen height, e.g. 0.03"),
+        'screen': (lambda v: isinstance(v, int) and not isinstance(v, bool)
+                   and v >= 0,
+                   "the number of a monitor: 0, 1, ..."),
+        'color': (lambda v: isinstance(v, (tuple, list)) and len(v) == 3
+                  and all(isinstance(c, int) and not isinstance(c, bool)
+                          and 0 <= c <= 255 for c in v),
+                  "three numbers from 0 to 255 (red, green, blue), e.g. "
+                  "(211, 211, 211)"),
+        'text': (lambda v: isinstance(v, str),
+                 'a text in quotes, e.g. "Press the space bar."'),
+    }
+    # Everything is checked first, and only then stored:
+    for name, value in changes.items():
+        if name not in SETTINGS:
+            raise TypeError(
+                f"chamois.settings() has no setting {name!r}. The "
+                f"settings are: {', '.join(SETTINGS)}.")
+        is_valid, expected = checks[SETTINGS[name]]
+        if not is_valid(value):
+            raise ValueError(
+                f"{name} must be {expected}, not {value!r}.")
+    for name, value in changes.items():
+        if SETTINGS[name] in ('color', 'font') and not isinstance(value, str):
+            value = tuple(value)
+        globals()[name.upper()] = value
 
 # --------------------------------------------------------------------
 # Session state
@@ -114,8 +182,8 @@ def session_prefix():
     """Filename stem shared by all files of one session:
     <participant>_<date>_<time>_list-<label>. "anon" only appears if
     the session ends before the participant ID was entered."""
-    return "%s_%s_list-%s" % (subject_id or "anon", session_id,
-                              latin_square_list_label or "NA")
+    return (f"{subject_id or 'anon'}_{session_id}"
+            f"_list-{latin_square_list_label or 'NA'}")
 
 
 def data_path(subdir, filename):
@@ -134,24 +202,45 @@ class ExperimentAbortException(Exception):
 # Latin square counterbalancing and stimulus loading. Which lists have
 # already been run is tracked in tested_latin_square_lists.txt. The
 # four square functions are taken from the original Chamois (hence the
-# two-space indents) and kept as they are, so the counterbalancing
-# behaves exactly like upstream.
+# two-space indents), so the counterbalancing behaves exactly like
+# upstream. The checks are the original ones too; only their error
+# messages were extended to name the items at fault. A design that
+# fails a check stops the script right there, before any window opens.
 # --------------------------------------------------------------------
 def check_latin_square(target_sentences):
+  if not target_sentences:
+    raise RuntimeError(
+      "Latin square: there are no target sentences (is the stimulus "
+      "file empty?).")
   # Checks that all items have the same number of sentence:
-  if len(set(Counter([x[0] for x in target_sentences]).values())) > 1:
-    raise RuntimeError("All items need to have the same number of sentences.")
+  counts = Counter([x[0] for x in target_sentences])
+  if len(set(counts.values())) > 1:
+    usual = Counter(counts.values()).most_common(1)[0][0]
+    odd = ", ".join(f"item {item} has {n}"
+                    for item, n in counts.items() if n != usual)
+    raise RuntimeError(
+      "Latin square: all items need to have the same number of "
+      f"sentences. Most items have {usual}, but {odd}.")
   # Checks that all items have the same conditions:
   d = dict()
   for k, v in [(x[0], x[1]) for x in target_sentences]:
     d.setdefault(k, []).append(v)
   items = list(d.keys())
   if len(set([tuple(l) for l in d.values()])) != 1:
-    raise RuntimeError("Latin square design looks unbalanced.")
+    usual = Counter(tuple(l) for l in d.values()).most_common(1)[0][0]
+    odd = "; ".join(f"item {item} has {', '.join(map(repr, l))}"
+                    for item, l in d.items() if tuple(l) != usual)
+    raise RuntimeError(
+      "Latin square design looks unbalanced: every item needs the same "
+      "conditions, in the same order. Most items have "
+      f"{', '.join(map(repr, usual))}, but {odd}.")
   # Checks that each condition is present only once:
   item, conditions = d.popitem()
   if len(set(conditions)) < len(conditions):
-    raise RuntimeError("At least one condition appears multiple times per item.")
+    repeated = sorted(c for c, n in Counter(conditions).items() if n > 1)
+    raise RuntimeError(
+      "Latin square: a condition appears more than once per item: "
+      f"{', '.join(map(repr, repeated))}.")
   return items, conditions
 
 
@@ -195,12 +284,20 @@ def next_latin_square_list(target_sentences):
 
 def load_stimuli(filename):
   """Read a stimulus file with four columns and no header: item,
-  condition, sentence, question. A literal \\n inside the sentence
-  becomes a line break on screen. Empty rows are skipped. A malformed
-  row raises a ValueError naming the file, the line and the problem —
-  loading happens before the window opens, so a bad file stops the
-  session before the participant is seated, never in the middle."""
-  delimiter = ',' if filename.endswith('.csv') else '\t'
+  condition, sentence, question. The file is either tab-separated
+  (name ending in .tsv) or comma-separated (.csv; a sentence that
+  contains a comma goes in double quotes, as spreadsheet programs
+  write it). A literal \\n inside the sentence becomes a line break on
+  screen. Empty rows are skipped. A malformed row raises a ValueError
+  naming the file, the line and the problem — loading happens before
+  the window opens, so a bad file stops the session before the
+  participant is seated, never in the middle."""
+  extension = os.path.splitext(filename)[1].lower()
+  if extension not in ('.tsv', '.csv'):
+    raise ValueError(
+      f"{filename}: stimulus files must be tab-separated (.tsv) or "
+      "comma-separated (.csv).")
+  delimiter = ',' if extension == '.csv' else '\t'
   stimuli = []
   # utf-8-sig also accepts files saved with a byte-order mark (Excel,
   # Windows Notepad); without it, item 1 would read as '\ufeff1'.
@@ -218,8 +315,15 @@ def load_stimuli(filename):
         continue
       if len(row) != 4:
         kind = 'comma' if delimiter == ',' else 'tab'
-        hint = (" (a stray tab inside the sentence counts as a column break)"
-                if delimiter == '\t' and len(row) > 4 else "")
+        hint = ""
+        if delimiter == '\t' and len(row) > 4:
+          hint = " (a stray tab inside the sentence counts as a column break)"
+        elif delimiter == ',' and len(row) > 4:
+          hint = (" (a sentence or question that contains a comma has to "
+                  "be in double quotes)")
+        elif delimiter == ',' and ';' in row[0]:
+          hint = (" (the file seems to be separated by semicolons; save "
+                  "it with commas, or as a tab-separated .tsv)")
         bad(f"expected 4 {kind}-separated columns "
             f"(item, condition, sentence, question), found {len(row)}{hint}")
       try:
@@ -231,6 +335,8 @@ def load_stimuli(filename):
         if not value.strip():
           bad(f"the {name} column is empty")
       stimuli.append((item, row[1], row[2].replace(r'\n', '\n'), row[3]))
+  if not stimuli:
+    raise ValueError(f"{filename}: the file contains no stimuli.")
   return stimuli
 
 
@@ -297,10 +403,10 @@ def check_words_fit(text, max_width, where):
         if wpx > max_width:
             raise RuntimeError(
                 "Word cannot be shown in full and would be broken/clipped "
-                "(%s): %r is %d px wide but only %d px are available. Fix "
+                f"({where}): {word!r} is {int(wpx)} px wide but only "
+                f"{int(max_width)} px are available. Fix "
                 "the text (split the word or the line differently), reduce "
-                "FONTSIZE, or lower the wrap width."
-                % (where, word, wpx, int(max_width)))
+                "FONTSIZE, or lower the wrap width.")
 
 
 def fitting_label(text, x, y, window_width):
@@ -343,12 +449,12 @@ class Page:
         if len(stim_abbrev) > 50:
             stim_abbrev = stim_abbrev[:49] + "…"
         if self.item and self.condition:
-            print("%d, %s (%s, %s): %s" % (self.pno, self.type, self.item,
-                                           self.condition, stim_abbrev))
+            print(f"{self.pno}, {self.type} ({self.item}, "
+                  f"{self.condition}): {stim_abbrev}")
         elif stim_abbrev:
-            print("%d, %s: %s" % (self.pno, self.type, stim_abbrev))
+            print(f"{self.pno}, {self.type}: {stim_abbrev}")
         else:
-            print("%d, %s" % (self.pno, self.type))
+            print(f"{self.pno}, {self.type}")
         self.build(app)
 
     def deactivate(self, app):
@@ -399,9 +505,9 @@ class ExperimentalTrial(Page):
     PNG stays human-readable."""
 
     def deactivate(self, app):
-        self.screenshot = "%s_page-%03d_%s_item-%03d_cond-%s.png" % (
-            session_prefix(), self.pno, self.type, self.item,
-            self.condition)
+        self.screenshot = (
+            f"{session_prefix()}_page-{self.pno:03d}_{self.type}"
+            f"_item-{self.item:03d}_cond-{self.condition}.png")
         try:
             # The plain get_image_data().save() is the fast path; a
             # format conversion to RGB here costs about half a second
@@ -432,7 +538,7 @@ class CenteredInstructions(Instructions):
         dy = px(0.04)
         if make_label(self.text, 0, 0).content_width > app.window.width - 2 * dy:
             check_words_fit(self.text, app.window.width - 4 * dy,
-                            "instruction %r" % self.stimulus)
+                            f"instruction {self.stimulus!r}")
 
     def build(self, app):
         cx, cy = app.window.width // 2, app.window.height // 2
@@ -489,19 +595,56 @@ class SubjectIDPage(Page):
             app.advance()
 
 
+def check_percent(percent):
+    is_number = (isinstance(percent, (int, float))
+                 and not isinstance(percent, bool))
+    if not is_number or not 0 <= percent <= 100:
+        raise ValueError(f"percent must be a number from 0 to 100, "
+                         f"not {percent!r}.")
+    return percent
+
+
+def sample_questions(pages):
+    """Thin out the question trials that were created with a `percent`
+    below 100: of all question trials of the same type (yes/no or
+    typed answer) sharing the same percent value, exactly that share
+    is kept (rounded to a whole number of questions) and the rest are
+    removed from the page list, so they are neither shown nor logged.
+    Which ones are kept is drawn anew for every session. The count is
+    exact: percent=30 on 40 questions gives every participant 12 of
+    them."""
+    groups = {}
+    for index, page in enumerate(pages):
+        percent = getattr(page, 'percent', 100)
+        if percent < 100:
+            groups.setdefault((type(page), percent), []).append(index)
+    dropped = set()
+    for (_, percent), indices in groups.items():
+        n_asked = round(len(indices) * percent / 100)
+        asked = set(random.sample(indices, n_asked))
+        dropped.update(set(indices) - asked)
+    return [page for index, page in enumerate(pages)
+            if index not in dropped]
+
+
 class YesNoQuestionTrial(ExperimentalTrial):
-    def __init__(self, item, condition, question):
+    """A yes/no comprehension question, answered with f (no) or j
+    (yes). `percent` below 100 shows only that share of the questions
+    created with the same value, see sample_questions()."""
+
+    def __init__(self, item, condition, question, percent=100):
         super().__init__()
         self.item = item
         self.condition = condition
         self.stimulus = question
+        self.percent = check_percent(percent)
 
     def validate(self, app):
         dy = px(0.04)
         if (make_label(self.stimulus, 0, 0).content_width
                 > app.window.width - 2 * dy):
             check_words_fit(self.stimulus, app.window.width - 4 * dy,
-                            "question item %s/%s" % (self.item, self.condition))
+                            f"question item {self.item}/{self.condition}")
 
     def build(self, app):
         cx, cy = app.window.width // 2, app.window.height // 2
@@ -539,13 +682,17 @@ class ComprehensionTrial(ExperimentalTrial):
 
     Typing is bounded by the screen: characters that would push the
     answer down into the hint line are ignored, so nothing a
-    participant types can ever be hidden or run off the screen."""
+    participant types can ever be hidden or run off the screen.
 
-    def __init__(self, item, condition, question):
+    `percent` below 100 shows only that share of the questions created
+    with the same value, see sample_questions()."""
+
+    def __init__(self, item, condition, question, percent=100):
         super().__init__()
         self.item = item
         self.condition = condition
         self.stimulus = question
+        self.percent = check_percent(percent)
         self.entered = ""
 
     def validate(self, app):
@@ -553,7 +700,7 @@ class ComprehensionTrial(ExperimentalTrial):
         if (make_label(self.stimulus, 0, 0).content_width
                 > app.window.width - 2 * dy):
             check_words_fit(self.stimulus, app.window.width - 4 * dy,
-                            "question item %s/%s" % (self.item, self.condition))
+                            f"question item {self.item}/{self.condition}")
 
     def build(self, app):
         cx, cy = app.window.width // 2, app.window.height // 2
@@ -607,13 +754,48 @@ class ComprehensionTrial(ExperimentalTrial):
                 app.advance()
 
 
+def wrap_text(text, width):
+    """Greedy line wrap to at most `width` characters per line (the
+    reading font is monospaced, so a character count maps directly to
+    on-screen width). Each line takes as many words as fit; the word
+    that would push it past `width` starts the next line, so a line may
+    end a little short but never runs over. Words are never split: a
+    single word longer than `width` gets a line of its own.
+
+    Manual line breaks win: a text that already contains a '\\n' comes
+    back unchanged, so hand-placed breaks are never disturbed. With
+    `width` None the text also comes back unchanged."""
+    if width is None:
+        return text
+    if isinstance(width, bool) or not isinstance(width, int) or width < 1:
+        raise ValueError(
+            "wrap must be None or a positive number of characters "
+            f"per line, not {width!r}.")
+    if '\n' in text:
+        return text
+    words = text.split()
+    if len(words) < 2:
+        return text
+    lines = []
+    current = words[0]
+    for word in words[1:]:
+        if len(current) + 1 + len(word) <= width:
+            current += ' ' + word
+        else:
+            lines.append(current)
+            current = word
+    lines.append(current)
+    return '\n'.join(lines)
+
+
 class ReadingTrial(ExperimentalTrial):
     """A blinking fixation cross, then the text, laid out word by
     word. A '\\n' in the stimulus starts a new line; every line gets
-    LINESPACING of padding above and below. A look-target sits in the
-    lower right corner. The trial ends with space, or Escape to abort
-    it. TPx.TPxReadingTrial adds eye-movement recording and the gaze
-    trigger on top of this class.
+    LINESPACING of padding above and below. The trial ends with space,
+    or Escape to abort it. The eye tracker versions (TPxReadingTrial,
+    EyeLinkReadingTrial) add eye-movement recording, a look-target in
+    the lower right corner and the gaze trigger that ends the trial
+    when the participant looks there.
 
     Where things appear is set per trial:
 
@@ -629,15 +811,25 @@ class ReadingTrial(ExperimentalTrial):
                       screen center; 'left' = just before the first
                       word, so reading starts with a saccade into it;
                       'right' = just past the end of the first line.
+      wrap            automatic line breaking: the maximum number of
+                      characters per line, or None (default) for
+                      none. A text that already contains a manual
+                      '\\n' is shown exactly as written, whatever
+                      `wrap` says (see wrap_text).
     """
 
+    # The look-target in the lower right corner is only shown by the
+    # eye tracker versions of this class, where looking at it ends the
+    # trial. Without a tracker it would mean nothing.
+    corner_target = False
+
     def __init__(self, item, condition, text, y_offset=0.0,
-                 align='left', cross_position='center'):
+                 align='left', cross_position='center', wrap=None):
         super().__init__()
         self.item = item
         self.condition = condition
-        self.text = text                              # with line breaks
-        self.stimulus = text.replace('\n', ' ')       # one line, for the log
+        self.text = wrap_text(text, wrap)             # with line breaks
+        self.stimulus = self.text.replace('\n', ' ')  # one line, for the log
         self.y_offset = y_offset
         self.align = align
         self.cross_position = cross_position
@@ -648,7 +840,7 @@ class ReadingTrial(ExperimentalTrial):
         # and bottom overflow are checked again at layout time.
         avail = app.window.width - 2 * px(LEFT_MARGIN)
         check_words_fit(self.text, avail,
-                        "reading item %s/%s" % (self.item, self.condition))
+                        f"reading item {self.item}/{self.condition}")
 
     def build(self, app):
         w, h = app.window.width, app.window.height
@@ -700,9 +892,11 @@ class ReadingTrial(ExperimentalTrial):
             cross_y = block_center
         self.cross = FixationCross(cross_x, cross_y,
                                    dot_color=LINE_DOT_COLOR)
-        corner = px(0.04)
-        self.corner_cross = FixationCross(w - corner, corner,
-                                          dot_color=CORNER_DOT_COLOR)
+        self.corner_cross = None
+        if self.corner_target:
+            corner = px(0.04)
+            self.corner_cross = FixationCross(w - corner, corner,
+                                              dot_color=CORNER_DOT_COLOR)
         self.state = 'blink'
         self.elapsed = 0.0
         self.cross_visible = True
@@ -739,19 +933,21 @@ class ReadingTrial(ExperimentalTrial):
                 if x + cw > w:
                     raise RuntimeError(
                         "Word cannot be shown in full and would be clipped: "
-                        "%r in line %r (item %s/%s)."
-                        % (word, line, self.item, self.condition))
+                        f"{word!r} in line {line!r} "
+                        f"(item {self.item}/{self.condition}).")
                 # Pyglet's y points up from the bottom; the log's y
                 # points down from the top:
-                aois.append("%d,%d,%d,%d" % (
-                    round(x), round(h - (y + ch / 2)),
-                    round(x + cw), round(h - (y - ch / 2))))
+                aois.append(
+                    f"{round(x)},{round(h - (y + ch / 2))},"
+                    f"{round(x + cw)},{round(h - (y - ch / 2))}")
                 x += cw + px(WORDSPACING)
             if x - px(WORDSPACING) > w:
                 raise RuntimeError(
                     "Text extends beyond window boundaries: " + line)
             y -= self.line_pitch
-        # The last line has to stay clear of the corner look-target:
+        # The last line has to stay clear of the corner look-target
+        # (the space is kept free without a tracker too, so a text that
+        # fits in one case fits in the other):
         if (y + self.line_pitch - self.line_height // 2 - px(LINESPACING)
                 < px(0.07)):
             raise RuntimeError(
@@ -779,8 +975,10 @@ class ReadingTrial(ExperimentalTrial):
                 self.cross.draw()
         else:
             # The line-start cross disappears once the text is up; only
-            # the corner look-target stays visible during reading.
-            self.corner_cross.draw()
+            # the corner look-target (eye tracker versions) stays
+            # visible during reading.
+            if self.corner_cross:
+                self.corner_cross.draw()
             for word in self.words:
                 word.draw()
 
@@ -829,7 +1027,8 @@ def write_log(pages, partial=False):
 # --------------------------------------------------------------------
 class ExperimentApp:
     def __init__(self, pages, fullscreen=True):
-        self.pages = pages
+        # Questions created with percent < 100 are thinned out here:
+        self.pages = sample_questions(pages)
         self.index = -1
         self.page = None
         self.finished = False
@@ -967,3 +1166,35 @@ class ExperimentApp:
         if not self.finished:
             # The window was closed from outside (e.g. Alt+F4):
             raise ExperimentAbortException()
+
+
+def run_experiment(pages, tracker=None):
+    """Run the experiment: the one call at the end of an experiment
+    script. `tracker` is the eye tracker object (TPx() or EyeLink());
+    without one the experiment runs as a plain reading experiment.
+
+    Takes care of everything around the pages: the session id, the
+    tracker's setup, the log (also a partial one if the experiment is
+    aborted with Ctrl+Q or stops with an error), and shutting the
+    tracker down again whatever happens."""
+    new_session()
+    if tracker is not None:
+        tracker.setup()
+    try:
+        if tracker is not None:
+            app = tracker.ExperimentApp(pages)
+        else:
+            app = ExperimentApp(pages)
+        try:
+            app.run()
+        except Exception as e:
+            aborted = isinstance(e, ExperimentAbortException)
+            print("Experiment aborted." if aborted else "An error occurred.")
+            # Whatever was completed up to this point is kept:
+            write_log(app.pages, partial=True)
+            if not aborted:
+                raise
+            sys.exit(1)
+    finally:
+        if tracker is not None:
+            tracker.shutdown()

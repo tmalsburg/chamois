@@ -18,20 +18,20 @@ It does four things:
      streams that installer (~290 MB) and extracts just the pypixxlib
      tarball from it — the installer is only read as an archive, never
      installed or run, so this works on all three platforms.
-  3. Installs the experiment's dependencies (pyglet, numpy, the
-     vendored pypixxlib, and SR Research's pylink) into the environment
-     that `uv run` uses.
+  3. Installs the dependencies of every demo experiment (pyglet,
+     numpy, the vendored pypixxlib, and SR Research's pylink) into the
+     environments that `uv run` uses.
   4. Deletes itself when everything worked.
 
-After that, running the experiment is always just:
+After that, running an experiment is always just:
 
-    uv run demo_experiment.py
+    uv run demo_experiment_tpx.py        (or another demo script)
 
 No virtual environment ever needs to be activated: `uv run` reads the
 header of the experiment script and finds the right environment on
 its own.
 
-The module files (chamois.py, TPx.py, EyeLink.py, demo_experiment.py)
+The module files (chamois.py, TPx.py, EyeLink.py) and the demo scripts
 have to sit in the same folder as this script, and the machine needs
 internet access.
 """
@@ -43,7 +43,12 @@ import sys
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-TARGET = os.path.join(HERE, "demo_experiment.py")
+# The experiment scripts whose dependencies get installed. Each has
+# its own environment, so every one of them is prepared:
+SCRIPTS = ["demo_experiment.py", "demo_experiment_tpx.py",
+           "demo_experiment_eyelink.py",
+           "demo_experiment_eyelink_multiline.py"]
+TARGETS = [os.path.join(HERE, name) for name in SCRIPTS]
 VENDOR_DIR = os.path.join(HERE, "vendor")
 TARBALL_NAME = "pypixxlib-1.12.1.tar.gz"
 VENDORED = os.path.join(VENDOR_DIR, TARBALL_NAME)
@@ -270,8 +275,9 @@ def check_offline_start(uv):
     end tells uv to work from that cache from then on.
     """
     print("\nChecking that the experiment can also start without internet...")
-    ok = subprocess.run([uv, "sync", "--script", TARGET, "--offline"],
-                        cwd=HERE).returncode == 0
+    ok = all(subprocess.run([uv, "sync", "--script", target, "--offline"],
+                            cwd=HERE).returncode == 0
+             for target in TARGETS)
     if ok:
         print("  ...yes: everything it needs is cached on this machine.")
     else:
@@ -284,11 +290,8 @@ def check_offline_start(uv):
 def main():
     # The module files must already be here; only the tarball can be
     # fetched.
-    for path, what in [(TARGET, "demo_experiment.py"),
-                       (os.path.join(HERE, "chamois.py"), "chamois.py"),
-                       (os.path.join(HERE, "TPx.py"), "TPx.py"),
-                       (os.path.join(HERE, "EyeLink.py"), "EyeLink.py")]:
-        if not os.path.exists(path):
+    for what in SCRIPTS + ["chamois.py", "TPx.py", "EyeLink.py"]:
+        if not os.path.exists(os.path.join(HERE, what)):
             fail(f"{what} not found next to setup_once.py — copy the whole "
                  "folder to this machine.")
 
@@ -304,9 +307,11 @@ def main():
     get_tarball(uv)
 
     print("Installing all dependencies (pyglet, numpy, vendored pypixxlib, pylink)...")
-    if subprocess.run([uv, "sync", "--script", TARGET], cwd=HERE).returncode != 0:
-        fail("dependency installation failed (see the error above; is the "
-             "internet reachable?).")
+    for target in TARGETS:
+        if subprocess.run([uv, "sync", "--script", target],
+                          cwd=HERE).returncode != 0:
+            fail("dependency installation failed (see the error above; is "
+                 "the internet reachable?).")
 
     offline_ok = check_offline_start(uv)
 
@@ -320,8 +325,9 @@ def main():
               "cable out. (Delete that uv.toml again\nwhenever you plug "
               "the machine back in to update or add a dependency.)")
     print("\n" + "=" * 60)
-    print("ALL SET. From now on, run the experiment with:")
-    print("\n    uv run demo_experiment.py\n")
+    print("ALL SET. From now on, run an experiment with:")
+    print("\n    uv run demo_experiment_tpx.py        (TRACKPixx)")
+    print("    uv run demo_experiment_eyelink.py    (EyeLink)\n")
     if not shutil.which("uv"):
         # uv was installed a moment ago: future terminals will find it
         # (the installer takes care of PATH), only this one does not yet.

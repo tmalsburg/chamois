@@ -1,5 +1,5 @@
 # /// script
-# requires-python = ">=3.9"
+# requires-python = ">=3.12"
 # dependencies = ["matplotlib", "numpy"]
 # ///
 """Quick visual check of a recorded session: for every reading trial,
