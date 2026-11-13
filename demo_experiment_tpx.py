@@ -1,89 +1,78 @@
-#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# dependencies = ["pyglet>=2.0", "numpy", "pypixxlib"]
+#
+# [tool.uv.sources]
+# pypixxlib = { path = "vendor/pypixxlib-1.12.1.tar.gz" }
+# ///
+"""A reading experiment with the VPixx TRACKPixx3/DATAPixx3: one
+sentence per trial, on a single line; stimuli and fillers in separate
+files. Calibrate in LabMaestro first, then run
 
-# Load Chamois:
-exec(open("chamois.py").read())
-# Load TRACKPixx3 support:
-exec(open("TPx.py").read())
+    uv run demo_experiment_tpx.py
 
-# Change theme:
-theme('Black')
-# See here for all available themes:
-# https://media.geeksforgeeks.org/wp-content/uploads/20200511200254/f19.jpg
+(once per machine before that: python3 setup_once.py). Without a
+DATAPixx3 the experiment runs in dry-run mode, without gaze.
 
-font = "Courier"
-fontsize = 22
-wordspacing = 18
+Reading trials end when the participant looks at the lower right
+corner (space is the fallback, and the only way without a tracker). f /
+j answer a question with no / yes, r on an instruction screen starts a
+recalibration, Escape aborts a reading trial, Ctrl+Q the experiment.
+The log, the screenshots and the eye-movement data land in data/.
+"""
 
-# Stimuli:
+import random
 
-practice_sentence = [
-  [101, "practice", "This is a practice sentence.", "Was this sentence difficult?"],
-  [102, "practice", "This is another practice sentence.", "Was this sentence in German?"]
+import chamois
+from TPx import TPx
+
+# The eye tracker. All settings have defaults (listed at the top of
+# TPx.py); to change one, name it here, e.g. TPx(gaze_display='both').
+tracker = TPx()
+
+# Font, sizes, colours and the texts the participant sees (e.g. for a
+# translation) have defaults too, listed at the top of chamois.py;
+# change them the same way: chamois.settings(fontsize=0.035, ...).
+
+# Stimuli: targets in stimuli.tsv, fillers in fillers.tsv.
+# Tab-separated, no header: item number, condition, sentence, question.
+
+practice_sentences = [
+    [101, "practice", "This is a practice sentence.", "Was this sentence difficult?"],
+    [102, "practice", "This is another practice sentence.", "Was this sentence in German?"],
 ]
 
-target_sentences = [
-  [1, "a", "While Bill hunted the deer was hunted by Bill.", "Did Bill hunt the deer?"],
-  [1, "b", "While Bill hunted the deer that was brown and nimble was hunted by Bill.", "Did Bill hunt the deer?"],
-  [2, "a", "While Mary bathed the baby bathed Mary.", "Did Mary bath the baby?"],
-  [2, "b", "While Mary bathed the baby that was small and cute bathed Mary.", "Did Mary bath the baby?"],
-  [3, "a", "Anna scolded the chef of the aristocrats who was routinely letting food go to waste.", "Did food go to waste?"],
-  [3, "b", "Anna studied with the chef of the aristocrats who was routinely letting food go to waste.", "Did food go to waste?"],
-]
+target_sentences = chamois.load_stimuli("stimuli.tsv")
+fillers = chamois.load_stimuli("fillers.tsv")
 
-fillers = [
-  [20, "filler", "Colorless green ideas sleep furiously.", "Does this sentence make any sense at all?"],
-  [21, "filler", "No head injury is too trivial to be ignored.", "Did that sentence make your brain hurt?"],
-]
+# Mix and shuffle the stimuli. Each participant sees every item in one
+# condition (Latin square); the next participant gets the next list.
 
-# Mix and shuffle stimuli:
-
-stimuli = next_latin_square_list(target_sentences)
+stimuli = chamois.next_latin_square_list(target_sentences)
 stimuli += fillers
 random.shuffle(stimuli)
 
-# Structure of the experiment:
+# An experiment is a series of pages:
 
-# Create eye-tracker object:
-tpx = TPx()
-
-# An experiment consists of a series of pages:
 pages = []
 
-# Welcome screen:
-pages.append(
-  CenteredInstructions("Welcome to this study!"))
+pages.append(chamois.SubjectIDPage())
+pages.append(chamois.CenteredInstructions("Welcome to this study!"))
 
-# Calibration:
-pages.append(
-  CenteredInstructions("Before we start, we calibrate the eye-tracker."))
-pages.append(TPxCalibration(tpx))
+pages.append(chamois.CenteredInstructions("First some practice sentences!"))
+for i, c, s, q in practice_sentences:
+    pages.append(tracker.ReadingTrial(i, c, s, cross_position='left'))
+    pages.append(chamois.YesNoQuestionTrial(i, c, q))
+    pages.append(chamois.Next())
 
-# Asks user to enter subject ID:
-pages.append(SubjectIDPage())
+# In the experiment proper, half of the trials are followed by their
+# question (percent=50):
+pages.append(chamois.CenteredInstructions("Now, on to the real experiment!"))
+for i, c, s, q in stimuli:
+    pages.append(tracker.ReadingTrial(i, c, s, cross_position='left'))
+    pages.append(chamois.YesNoQuestionTrial(i, c, q, percent=50))
+    pages.append(chamois.Next())
 
-# Practice sentences:
-pages.append(
-  CenteredInstructions("First some practice sentences!"))
+pages.append(chamois.CenteredInstructions("Thank you for your participation!"))
 
-for i,c,s,q in practice_sentence:
-  pages.append(TPxReadingTrial(i,c,s,tpx,trigger_radius=200))
-  pages.append(YesNoQuestionTrial(i,c,q))
-  pages.append(TPxNext(tpx))
-
-# Experimental trials:
-pages.append(
-  CenteredInstructions("Now, on to the real experiment!"))
-
-for i,c,s,q in stimuli:
-  pages.append(TPxReadingTrial(i,c,s,tpx,trigger_radius=200))
-  if random.choice([True, False]):
-    pages.append(YesNoQuestionTrial(i,c,q))
-  pages.append(TPxNext(tpx))
-
-# Thank you screen:
-pages.append(
-  CenteredInstructions("Thank you for your participation!"))
-
-# Run experiment:
-run_experiment(pages)
-
+chamois.run_experiment(pages, tracker)

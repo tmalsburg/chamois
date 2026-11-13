@@ -1,0 +1,17 @@
+# Runtime outputs (recreated automatically)
+data/
+tested_latin_square_lists.txt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Local tool settings and AI notes (kept local, not published)
+.claude/
+CLAUDE.md
+
+# pypixxlib is proprietary VPixx software and is not redistributed here.
+# setup_once.py downloads it from VPixx (https://docs.vpixx.com/download)
+# into vendor/ during the one-time (online) setup.
+vendor/

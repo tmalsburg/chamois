@@ -1,77 +1,70 @@
-#!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.12"
+# dependencies = ["pyglet>=2.0"]
+# ///
+"""Hello world: the smallest reading experiment, without eye-tracking
+and with the sentences right here in the script. Run it with
 
-# Load Chamois:
-exec(open("chamois.py").read())
+    uv run demo_experiment.py
 
-# Change theme:
-theme('Black')
-# See here for all available themes:
-# https://media.geeksforgeeks.org/wp-content/uploads/20200511200254/f19.jpg
+Space continues and ends a reading trial, f / j answer a question with
+no / yes, Ctrl+Q aborts the experiment. The log, and a screenshot of
+every trial, land in data/.
 
-font = "Courier"
-fontsize = 22
-wordspacing = 18
+For a real experiment (practice trials, conditions, fillers, stimuli
+in files, an eye tracker) see demo_experiment_tpx.py (VPixx
+TRACKPixx3) and demo_experiment_eyelink.py (SR Research EyeLink).
+"""
 
-# Stimuli:
+import chamois
 
-practice_sentence = [
-  [101, "practice", "This is a practice sentence.", "Was this sentence difficult?"],
-  [102, "practice", "This is another practice sentence.", "Was this sentence in German?"]
+# Settings. All of them have defaults (listed at the top of
+# chamois.py); to change some, name them here. For example the font
+# size (a fraction of the screen height) and the text below every
+# instruction screen, e.g. to translate it:
+chamois.settings(fontsize=0.03,
+                 continue_text="Press the space bar to continue.",
+                 subject_id_prompt="what is your participant ID?")
+
+# The sentences: item number, condition, sentence, question. The
+# first two come with a yes/no question, the last two with a question
+# that is answered by typing.
+
+yesno_sentences = [
+    [1, "hello", "Hello world!", "Did the sentence say hello?"],
+    [2, "hello", "This is a sentence.", "Was this a sentence?"],
 ]
 
-target_sentences = [
-  [1, "a", "While Bill hunted the deer was hunted by Bill.", "Did Bill hunt the deer?"],
-  [1, "b", "While Bill hunted the deer that was brown and nimble was hunted by Bill.", "Did Bill hunt the deer?"],
-  [2, "a", "While Mary bathed the baby bathed Mary.", "Did Mary bath the baby?"],
-  [2, "b", "While Mary bathed the baby that was small and cute bathed Mary.", "Did Mary bath the baby?"],
-  [3, "a", "Anna scolded the chef of the aristocrats who was routinely letting food go to waste.", "Did food go to waste?"],
-  [3, "b", "Anna studied with the chef of the aristocrats who was routinely letting food go to waste.", "Did food go to waste?"],
+typed_sentences = [
+    [3, "hello", "The cat sat on the mat.", "Where did the cat sit?"],
+    [4, "hello", "The dog chased the ball.", "What did the dog chase?"],
 ]
 
-fillers = [
-  [20, "filler", "Colorless green ideas sleep furiously.", "Does this sentence make any sense at all?"],
-  [21, "filler", "No head injury is too trivial to be ignored.", "Did that sentence make your brain hurt?"],
-]
+# An experiment is a series of pages:
 
-# Mix and shuffle stimuli:
-
-stimuli = next_latin_square_list(target_sentences)
-stimuli += fillers
-random.shuffle(stimuli)
-
-# Structure of the experiment:
-
-# An experiment consists of a series of pages:
 pages = []
 
-# Welcome screen:
-pages.append(
-  CenteredInstructions("Welcome to this study!"))
+pages.append(chamois.SubjectIDPage())
+pages.append(chamois.CenteredInstructions("Welcome to this study!"))
 
-# Asks user to enter subject ID:
-pages.append(SubjectIDPage())
+# Where the sentence appears:
+#   align     'left', 'center' or 'right'
+#   y_offset  height on the screen: 0.0 = middle, 0.3 = higher up,
+#             -0.3 = lower down (1.0 is the full screen height)
+# How often a question follows:
+#   percent   50 = after half of the sentences (chosen at random for
+#             every participant), 100 = after every sentence
 
-# Practice sentences:
-pages.append(
-  CenteredInstructions("First some practice sentences!"))
+# Yes/no questions, answered with the keys f (no) and j (yes):
+for i, c, s, q in yesno_sentences:
+    pages.append(chamois.ReadingTrial(i, c, s, align='center', y_offset=0.0))
+    pages.append(chamois.YesNoQuestionTrial(i, c, q, percent=50))
 
-for i,c,s,q in practice_sentence:
-  pages.append(ReadingTrial(i,c,s))
-  pages.append(YesNoQuestionTrial(i,c,q))
+# Typed answers: the participant types and confirms with Enter:
+for i, c, s, q in typed_sentences:
+    pages.append(chamois.ReadingTrial(i, c, s, align='center', y_offset=0.0))
+    pages.append(chamois.ComprehensionTrial(i, c, q, percent=50))
 
-# Experimental trials:
-pages.append(
-  CenteredInstructions("Now, on to the real experiment!"))
+pages.append(chamois.CenteredInstructions("Thank you for your participation!"))
 
-for i,c,s,q in stimuli:
-  pages.append(ReadingTrial(i,c,s))
-  if random.choice([True, False]):
-    pages.append(YesNoQuestionTrial(i,c,q))
-
-# Thank you screen:
-pages.append(
-  CenteredInstructions("Thank you for your participation!"))
-
-# Run experiment:
-run_experiment(pages)
-
+chamois.run_experiment(pages)

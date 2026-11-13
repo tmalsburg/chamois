@@ -1,0 +1,18 @@
+[project]
+name = "chamois"
+version = "0.1.0"
+description = "Lightweight, eye-tracker-agnostic library for psycholinguistic reading experiments"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pyglet>=2.0",
+    "numpy",
+    "pypixxlib",
+    "sr-research-pylink",
+]
+
+# pypixxlib is proprietary VPixx software, not on PyPI: the tarball is
+# placed in vendor/ by setup_once.py (gitignored, not redistributed). Same source as the PEP 723 header
+# in demo_experiment_tpx.py; `uv run <script>` uses the script's header.
+[tool.uv.sources]
+pypixxlib = { path = "vendor/pypixxlib-1.12.1.tar.gz" }
